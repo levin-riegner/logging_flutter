@@ -2,6 +2,10 @@ part of logger_flutter;
 
 ListQueue<OutputEvent> _outputEventBuffer = ListQueue();
 
+class FullLogs {
+  StringBuffer fullLogs = StringBuffer('Start: ');
+}
+
 class LogConsole extends StatefulWidget {
   final bool dark;
   final bool showCloseButton;
@@ -47,6 +51,8 @@ class _LogConsoleState extends State<LogConsole> {
   ListQueue<RenderedEvent> _renderedBuffer = ListQueue();
   List<RenderedEvent> _filteredBuffer = [];
 
+  var logs = FullLogs().fullLogs;
+
   var _scrollController = ScrollController();
   var _filterController = TextEditingController();
 
@@ -63,7 +69,8 @@ class _LogConsoleState extends State<LogConsole> {
 
     _scrollController.addListener(() {
       if (!_scrollListenerEnabled) return;
-      var scrolledToBottom = _scrollController.offset >= _scrollController.position.maxScrollExtent;
+      var scrolledToBottom = _scrollController.offset >=
+          _scrollController.position.maxScrollExtent;
       setState(() {
         _followBottom = scrolledToBottom;
       });
@@ -117,15 +124,19 @@ class _LogConsoleState extends State<LogConsole> {
             ),
       home: Scaffold(
         body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              _buildTopBar(),
-              Expanded(
-                child: _buildLogContent(),
-              ),
-              _buildBottomBar(),
-            ],
+          child: FlatButton(
+            onPressed: () =>
+                Clipboard.setData(ClipboardData(text: logs.toString())),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _buildTopBar(),
+                Expanded(
+                  child: _buildLogContent(),
+                ),
+                _buildBottomBar(),
+              ],
+            ),
           ),
         ),
         floatingActionButton: AnimatedOpacity(
@@ -149,6 +160,7 @@ class _LogConsoleState extends State<LogConsole> {
   }
 
   Widget _buildLogContent() {
+    logs.clear();
     return Container(
       color: widget.dark ? Colors.black : Colors.grey[150],
       child: SingleChildScrollView(
@@ -160,6 +172,8 @@ class _LogConsoleState extends State<LogConsole> {
             controller: _scrollController,
             itemBuilder: (context, index) {
               var logEntry = _filteredBuffer[index];
+              logs.write(logEntry.lowerCaseText);
+              print(index);
               return Text.rich(
                 logEntry.span,
                 key: Key(logEntry.id.toString()),
@@ -188,6 +202,19 @@ class _LogConsoleState extends State<LogConsole> {
           ),
           Spacer(),
           IconButton(
+            icon: Icon(
+              Icons.content_copy_rounded,
+              color: Colors.greenAccent,
+            ),
+            onPressed: () {
+              Clipboard.setData(
+                ClipboardData(
+                  text: logs.toString(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
               setState(() {
@@ -205,9 +232,14 @@ class _LogConsoleState extends State<LogConsole> {
           ),
           if (widget.showCloseButton)
             IconButton(
-              icon: Icon(Icons.close),
+              icon: Icon(
+                Icons.cancel,
+                color: Colors.red[200],
+                size: 30,
+              ),
               onPressed: () {
                 Navigator.pop(context);
+                logs.clear();
               },
             ),
         ],
