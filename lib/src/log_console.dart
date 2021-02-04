@@ -173,7 +173,6 @@ class _LogConsoleState extends State<LogConsole> {
             itemBuilder: (context, index) {
               var logEntry = _filteredBuffer[index];
               logs.write(logEntry.lowerCaseText);
-              print(index);
               return Text.rich(
                 logEntry.span,
                 key: Key(logEntry.id.toString()),
