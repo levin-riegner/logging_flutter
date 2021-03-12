@@ -124,7 +124,7 @@ class _LogConsoleState extends State<LogConsole> {
             ),
       home: Scaffold(
         body: SafeArea(
-          child: FlatButton(
+          child: TextButton(
             onPressed: () =>
                 Clipboard.setData(ClipboardData(text: logs.toString())),
             child: Column(

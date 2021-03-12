@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class AnsiParser {
   static const TEXT = 0, BRACKET = 1, CODE = 2;
@@ -114,6 +113,7 @@ class AnsiParser {
       case 199:
         return dark ? Colors.pink[300] : Colors.pink[700];
     }
+    return foreground ? Colors.black : Colors.transparent;
   }
 
   TextSpan createSpan(String text) {
