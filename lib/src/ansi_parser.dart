@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class AnsiParser {
   static const TEXT = 0, BRACKET = 1, CODE = 2;
@@ -9,17 +8,17 @@ class AnsiParser {
 
   AnsiParser(this.dark);
 
-  Color foreground;
-  Color background;
-  List<TextSpan> spans;
+  Color? foreground;
+  Color? background;
+  List<TextSpan>? spans;
 
   void parse(String s) {
     spans = [];
     var state = TEXT;
-    StringBuffer buffer;
+    StringBuffer? buffer;
     var text = StringBuffer();
     var code = 0;
-    List<int> codes;
+    late List<int> codes;
 
     for (var i = 0, n = s.length; i < n; i++) {
       var c = s[i];
@@ -37,7 +36,7 @@ class AnsiParser {
           break;
 
         case BRACKET:
-          buffer.write(c);
+          buffer!.write(c);
           if (c == '[') {
             state = CODE;
           } else {
@@ -47,7 +46,7 @@ class AnsiParser {
           break;
 
         case CODE:
-          buffer.write(c);
+          buffer!.write(c);
           var codeUnit = c.codeUnitAt(0);
           if (codeUnit >= 48 && codeUnit <= 57) {
             code = code * 10 + codeUnit - 48;
@@ -58,7 +57,7 @@ class AnsiParser {
             continue;
           } else {
             if (text.isNotEmpty) {
-              spans.add(createSpan(text.toString()));
+              spans!.add(createSpan(text.toString()));
               text.clear();
             }
             state = TEXT;
@@ -74,7 +73,7 @@ class AnsiParser {
       }
     }
 
-    spans.add(createSpan(text.toString()));
+    spans!.add(createSpan(text.toString()));
   }
 
   void handleCodes(List<int> codes) {
@@ -101,7 +100,7 @@ class AnsiParser {
     }
   }
 
-  Color getColor(int colorCode, bool foreground) {
+  Color? getColor(int colorCode, bool foreground) {
     switch (colorCode) {
       case 0:
         return foreground ? Colors.black : Colors.transparent;
@@ -114,6 +113,7 @@ class AnsiParser {
       case 199:
         return dark ? Colors.pink[300] : Colors.pink[700];
     }
+    return foreground ? Colors.black : Colors.transparent;
   }
 
   TextSpan createSpan(String text) {
