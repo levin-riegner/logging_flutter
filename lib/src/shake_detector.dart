@@ -19,6 +19,7 @@ class ShakeDetector {
 
   int lastShakeTimestamp = DateTime.now().millisecondsSinceEpoch;
 
+  // ignore: cancel_subscriptions
   StreamSubscription? streamSubscription;
 
   ShakeDetector({

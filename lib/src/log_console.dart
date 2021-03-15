@@ -27,7 +27,7 @@ class LogConsole extends StatefulWidget {
     await Navigator.push(context, route);
   }
 
-  static void add(OutputEvent outputEvent, {int bufferSize = 20}) {
+  static void add(OutputEvent outputEvent, {int? bufferSize = 20}) {
     while (_outputEventBuffer.length >= (bufferSize ?? 1)) {
       _outputEventBuffer.removeFirst();
     }
