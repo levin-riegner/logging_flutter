@@ -1,44 +1,33 @@
-import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
-import 'package:logger_flutter/logger_flutter.dart';
+import 'package:logging_flutter/flogger.dart';
+import 'package:logging_flutter/logging_flutter.dart';
 
 void main() {
+  init();
   runApp(MyApp());
-  log();
 }
 
-var logger = Logger(
-  printer: PrettyPrinter(),
-  output: ExampleLogOutput(),
-);
-
-var loggerNoStack = Logger(
-  printer: PrettyPrinter(methodCount: 0),
-  output: ExampleLogOutput(),
-);
-
-class ExampleLogOutput extends ConsoleOutput {
-  @override
-  void output(OutputEvent event) {
-    super.output(event);
-    LogConsole.add(event);
-  }
+void init() {
+  // Show Debug Logs
+  Flogger.showDebugLogs(true);
+  // Send logs to Run console
+  Flogger.registerListener((record) => log(record.message));
+  // Can also use "registerListener" to log to Crashlytics or other services
+  // Send logs to App Console
+  Flogger.registerListener((record) => LogConsole.add(
+      OutputEvent(record.level, [record.message])));
 }
 
-void log() {
-  logger.d("Log message with 2 methods");
+void printSomeLogs() {
+  Flogger.d("Log message with 2 methods");
 
-  loggerNoStack.i("Info message");
+  Flogger.i("Info message");
 
-  loggerNoStack.w("Just a warning!");
+  Flogger.w("Just a warning!");
 
-  logger.e("Error! Something bad happened", "Test Error");
-
-  loggerNoStack.v({"key": 5, "value": "something"});
-
-  Future.delayed(Duration(seconds: 5), log);
+  Flogger.e("Error! Something bad happened", object: Exception("Test Error"));
 }
 
 class MyApp extends StatelessWidget {
@@ -67,6 +56,9 @@ class HomeWidget extends StatelessWidget {
               child: Text("Shake Phone to open Console."),
             ),
           ),
+          TextButton(
+              onPressed: () => printSomeLogs(),
+              child: Text("Print some Logs")),
           TextButton(
               onPressed: () => LogConsole.open(context),
               child: Text("or click here to open Console")),

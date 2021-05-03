@@ -1,4 +1,4 @@
-part of logger_flutter;
+part of logging_flutter;
 
 class LogConsoleOnShake extends StatefulWidget {
   final Widget child;

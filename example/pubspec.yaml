@@ -1,15 +1,15 @@
 name: example
-description: Demonstrates how to use the logger_flutter plugin.
+description: Demonstrates how to use the logging_flutter plugin.
 publish_to: 'none'
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  logger_flutter:
+  logging_flutter:
     path: ../
 
 flutter:

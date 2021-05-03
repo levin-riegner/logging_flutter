@@ -1,9 +1,16 @@
-part of logger_flutter;
+part of logging_flutter;
 
 ListQueue<OutputEvent> _outputEventBuffer = ListQueue();
 
 class FullLogs {
   StringBuffer fullLogs = StringBuffer('Start: ');
+}
+
+class OutputEvent {
+  final Level level;
+  final List<String> lines;
+
+  OutputEvent(this.level, this.lines);
 }
 
 class LogConsole extends StatefulWidget {
@@ -56,7 +63,7 @@ class _LogConsoleState extends State<LogConsole> {
   var _scrollController = ScrollController();
   var _filterController = TextEditingController();
 
-  Level? _filterLevel = Level.verbose;
+  Level? _filterLevel = Level.CONFIG;
   double _logFontSize = 14;
 
   var _currentId = 0;
@@ -90,7 +97,7 @@ class _LogConsoleState extends State<LogConsole> {
 
   void _refreshFilter() {
     var newFilteredBuffer = _renderedBuffer.where((it) {
-      var logLevelMatches = it.level.index >= _filterLevel!.index;
+      var logLevelMatches = it.level.value >= _filterLevel!.value;
       if (!logLevelMatches) {
         return false;
       } else if (_filterController.text.isNotEmpty) {
@@ -124,19 +131,17 @@ class _LogConsoleState extends State<LogConsole> {
             ),
       home: Scaffold(
         body: SafeArea(
-          child: TextButton(
-            onPressed: () =>
-                Clipboard.setData(ClipboardData(text: logs.toString())),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                _buildTopBar(),
-                Expanded(
-                  child: _buildLogContent(),
-                ),
-                _buildBottomBar(),
-              ],
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _buildTopBar(context),
+              SizedBox(height: 8),
+              Expanded(
+                child: _buildLogContent(),
+              ),
+              SizedBox(height: 8),
+              _buildBottomBar(),
+            ],
           ),
         ),
         floatingActionButton: AnimatedOpacity(
@@ -172,11 +177,12 @@ class _LogConsoleState extends State<LogConsole> {
             controller: _scrollController,
             itemBuilder: (context, index) {
               var logEntry = _filteredBuffer[index];
-              logs.write(logEntry.lowerCaseText);
+              logs.write(logEntry.lowerCaseText + "\n");
               return Text.rich(
                 logEntry.span,
                 key: Key(logEntry.id.toString()),
-                style: TextStyle(fontSize: _logFontSize),
+                style: TextStyle(
+                    fontSize: _logFontSize, color: logEntry.level.toColor()),
               );
             },
             itemCount: _filteredBuffer.length,
@@ -186,7 +192,7 @@ class _LogConsoleState extends State<LogConsole> {
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar(BuildContext context) {
     return LogBar(
       dark: widget.dark,
       child: Row(
@@ -268,28 +274,24 @@ class _LogConsoleState extends State<LogConsole> {
             value: _filterLevel,
             items: [
               DropdownMenuItem(
-                child: Text("VERBOSE"),
-                value: Level.verbose,
-              ),
-              DropdownMenuItem(
-                child: Text("DEBUG"),
-                value: Level.debug,
+                child: Text("CONFIG"),
+                value: Level.CONFIG,
               ),
               DropdownMenuItem(
                 child: Text("INFO"),
-                value: Level.info,
+                value: Level.INFO,
               ),
               DropdownMenuItem(
                 child: Text("WARNING"),
-                value: Level.warning,
+                value: Level.WARNING,
               ),
               DropdownMenuItem(
-                child: Text("ERROR"),
-                value: Level.error,
+                child: Text("SEVERE"),
+                value: Level.SEVERE,
               ),
               DropdownMenuItem(
-                child: Text("WTF"),
-                value: Level.wtf,
+                child: Text("SHOUT"),
+                value: Level.SHOUT,
               )
             ],
             onChanged: (dynamic value) {
@@ -361,5 +363,23 @@ class LogBar extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+extension LevelExtension on Level {
+  Color toColor() {
+    if (this == Level.CONFIG) {
+      return Colors.black38;
+    } else if (this == Level.INFO) {
+      return Colors.black;
+    } else if (this == Level.WARNING) {
+      return Colors.orange;
+    } else if (this == Level.SEVERE) {
+      return Colors.red;
+    } else if (this == Level.SHOUT) {
+      return Colors.pinkAccent;
+    } else {
+      return Colors.black;
+    }
   }
 }
