@@ -1,16 +1,32 @@
-## 1.0.0-nullsafety.0
+# Changelog
 
-- Upgraded dependencies to null safety versions
-- Applied advised changes from dart migrate
+All notable changes to this project will be documented in this file.
 
-## 0.9.0
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- Add support to logger 0.9.1 or greater
+## [Unreleased]
 
-## 0.7.1
+### Added
 
-- Fixed error during build
+- Configuration class for logs.
 
-## 0.7.0
+### Fixed
 
-- First version
+- Use correct colors for messages in the dark mode log console.
+
+## [1.0.1] - 2022-03-07
+
+### Added
+
+- Expose ShakeDetector.
+
+### Changed
+
+- Sensors library for Sensors Plus.
+
+## [1.0.0] - 2021-04-03
+
+### Added
+
+- Initial release.

@@ -1,61 +1,129 @@
-import 'package:logging/logging.dart';
+import "package:logging/logging.dart";
+import 'package:stack_trace/stack_trace.dart';
+
+class FloggerConfig {
+  static const defaultLoggerName = "App";
+
+  final String loggerName;
+  final bool printClassName;
+  final bool printMethodName;
+  final bool showDateTime;
+  final bool showDebugLogs;
+  final bool Function(LogRecord)? mightContainSensitiveData;
+
+  const FloggerConfig({
+    this.loggerName = defaultLoggerName,
+    this.printClassName = true,
+    this.printMethodName = false,
+    this.showDateTime = false,
+    this.showDebugLogs = true,
+    this.mightContainSensitiveData,
+  });
+}
 
 abstract class Flogger {
-  static const String _loggerName = "App";
-
-  static Logger _logger = Logger(_loggerName);
+  static FloggerConfig _config = FloggerConfig();
+  static Logger _logger = Logger(_config.loggerName);
+  static final Map<String, Logger> _children = {};
 
   Flogger._();
 
+  static init(FloggerConfig config) {
+    _config = config;
+    _logger = Logger(_config.loggerName);
+    Logger.root.level = _config.showDebugLogs ? Level.ALL : Level.INFO;
+  }
+
   // region Log methods
-  static d(String message, {Object? object}) => debug(message, object: object);
+  static d(String message, {String? tag}) => _log(
+        message,
+        tag: tag,
+        severity: Level.CONFIG,
+      );
 
-  static debug(String message, {Object? object}) {
-    _log(message, severity: Level.CONFIG, object: object);
-  }
+  static i(String message, {String? tag}) => _log(
+        message,
+        tag: tag,
+        severity: Level.INFO,
+      );
 
-  static i(String message, {Object? object}) => info(message, object: object);
+  static w(String message, {String? tag}) => _log(
+        message,
+        tag: tag,
+        severity: Level.WARNING,
+      );
 
-  static info(String message, {Object? object}) {
-    _log(message, severity: Level.INFO, object: object);
-  }
+  static e(String message, {StackTrace? stackTrace, String? tag}) => _log(
+        message,
+        tag: tag,
+        severity: Level.SEVERE,
+        stackTrace: stackTrace,
+      );
 
-  static w(String message, {Object? object}) =>
-      warning(message, object: object);
+  // Log message to Logger
+  static _log(
+    String message, {
+    String? tag,
+    required Level severity,
+    StackTrace? stackTrace,
+  }) {
+    String? className;
+    String? methodName;
+    try {
+      // This variable can be ClassName.MethodName or only a function name, when it doesn't belong to a class, e.g. main()
+      var member = Trace.current().frames[2].member!;
+      // If there is a . in the member name, it means the method belongs to a class. Thus we can split it.
+      if (member.contains(".")) {
+        className = member.split(".")[0];
+      } else {
+        className = "";
+      }
+      // If there is a . in the member name, it means the method belongs to a class. Thus we can split it.
+      if (member.contains(".")) {
+        methodName = member.split(".")[1];
+      } else {
+        methodName = member;
+      }
+    } catch (e) {}
 
-  static warning(String message, {Object? object}) {
-    _log(message, severity: Level.WARNING, object: object);
-  }
-
-  static e(String message, {Object? object, StackTrace? stackTrace}) =>
-      error(message, object: object, stackTrace: stackTrace);
-
-  static error(String message, {Object? object, StackTrace? stackTrace}) {
-    _log(message,
-        severity: Level.SEVERE, object: object, stackTrace: stackTrace);
-  }
-
-  static _log(String message,
-      {Level severity = Level.CONFIG, Object? object, StackTrace? stackTrace}) {
-    StackTrace? stack = stackTrace;
-    if (stack == null && object is Error) stack = object.stackTrace;
-
-    if (object != null) {
-      _logger.log(severity, "$message - $object", null, stack);
+    var logMessage = "";
+    // Append logger name
+    logMessage += "${tag ?? _config.loggerName} ";
+    // Append Class name and Method name
+    if (className != null && _config.printClassName) {
+      if (methodName != null && _config.printMethodName) {
+        logMessage += "$className#$methodName: $message";
+      } else {
+        logMessage += "$className: $message";
+      }
     } else {
-      _logger.log(severity, message, null, stack);
+      logMessage += message;
+    }
+    // Log
+    if (tag == null) {
+      // Main logger
+      _logger.log(severity, logMessage, null, stackTrace);
+    } else {
+      // Additional loggers
+      if (_children.containsKey(tag)) {
+        _children[tag]!.log(severity, logMessage, null, stackTrace);
+      } else {
+        _children[tag] = Logger(tag)
+          ..log(severity, logMessage, null, stackTrace);
+      }
     }
   }
 
-  // endregion
-
-  static showDebugLogs(bool enable) {
-    Logger.root.level = enable ? Level.ALL : Level.INFO;
-  }
+// endregion
 
   static registerListener(void onRecord(FloggerRecord record)) {
     Logger.root.onRecord
-        .map((e) => FloggerRecord.fromLogger(e, e.loggerName != _loggerName))
+        .map((e) => FloggerRecord.fromLogger(
+              e,
+              mightContainSensitiveData:
+                  _config.mightContainSensitiveData?.call(e) ?? false,
+              showDateTime: _config.showDateTime,
+            ))
         .listen(onRecord);
   }
 }
@@ -63,15 +131,53 @@ abstract class Flogger {
 class FloggerRecord {
   final String message;
   final Level level;
+  final StackTrace? stackTrace;
   final bool mightContainSensitiveData;
 
-  FloggerRecord._(this.message, this.level, this.mightContainSensitiveData);
+  FloggerRecord._(
+    this.message,
+    this.level,
+    this.stackTrace,
+    this.mightContainSensitiveData,
+  );
+
+  static String _levelShort(Level level) {
+    if (level == Level.CONFIG) {
+      return "D";
+    } else if (level == Level.INFO) {
+      return "I";
+    } else if (level == Level.WARNING) {
+      return "W";
+    } else if (level == Level.SEVERE) {
+      return "E";
+    } else {
+      return "?";
+    }
+  }
 
   factory FloggerRecord.fromLogger(
-      LogRecord record, bool mightContainSensitiveData) {
-    var message =
-        '${record.loggerName}: ${record.level.name}: ${record.message}';
-    if (record.stackTrace != null) message += '${record.stackTrace}';
-    return FloggerRecord._(message, record.level, mightContainSensitiveData);
+    LogRecord record, {
+    required bool mightContainSensitiveData,
+    required bool showDateTime,
+  }) {
+    // Get stacktrace from record stackTrace or record object
+    StackTrace? stackTrace = record.stackTrace;
+    if (record.stackTrace == null && record.object is Error)
+      stackTrace = (record.object as Error).stackTrace;
+    // Create message
+    var message = "";
+    // Maybe add DateTime
+    if (showDateTime) message += "${record.time} ";
+    // Add message
+    message += "${_levelShort(record.level)}/${record.message}";
+    // Maybe add object
+    if (record.object != null) message += " - ${record.object}";
+    // Build Flogger record
+    return FloggerRecord._(
+      message,
+      record.level,
+      stackTrace,
+      mightContainSensitiveData,
+    );
   }
 }

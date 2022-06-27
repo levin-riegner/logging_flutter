@@ -2,5 +2,6 @@
 
 **Logging** package is [here](https://pub.dev/packages/logging).
 
-### Resources:
+## Resources
+
 - [GitHub Repository](https://github.com/levin-riegner/logging_flutter)

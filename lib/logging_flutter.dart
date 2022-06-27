@@ -3,18 +3,18 @@ library logging_flutter;
 
 import 'dart:collection';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 
 import 'src/ansi_parser.dart';
 import 'src/shake_detector.dart';
 
-import 'flogger.dart';
+export 'package:logging/src/level.dart';
 
-part 'src/log_console_on_shake.dart';
+export 'src/shake_detector.dart';
+
 part 'src/log_console.dart';
+part 'src/log_console_on_shake.dart';

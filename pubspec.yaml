@@ -1,7 +1,6 @@
 name: logging_flutter
 description: Flutter extension for logging. Please go there for documentation.
 version: 1.0.0
-author: Alex Queudot <alexq@levinriegner.com>
 homepage: https://github.com/levin-riegner/logging_flutter
 
 environment:
@@ -13,3 +12,4 @@ dependencies:
 
   logging: ^1.0.1
   sensors: ^2.0.0
+  stack_trace: ^1.10.0

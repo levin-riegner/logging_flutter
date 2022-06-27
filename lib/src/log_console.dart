@@ -34,7 +34,7 @@ class LogConsole extends StatefulWidget {
     await Navigator.push(context, route);
   }
 
-  static void add(OutputEvent outputEvent, {int? bufferSize = 20}) {
+  static void add(OutputEvent outputEvent, {int? bufferSize = 1000}) {
     while (_outputEventBuffer.length >= (bufferSize ?? 1)) {
       _outputEventBuffer.removeFirst();
     }
@@ -182,7 +182,8 @@ class _LogConsoleState extends State<LogConsole> {
                 logEntry.span,
                 key: Key(logEntry.id.toString()),
                 style: TextStyle(
-                    fontSize: _logFontSize, color: logEntry.level.toColor()),
+                    fontSize: _logFontSize,
+                    color: logEntry.level.toColor(widget.dark)),
               );
             },
             itemCount: _filteredBuffer.length,
@@ -274,7 +275,7 @@ class _LogConsoleState extends State<LogConsole> {
             value: _filterLevel,
             items: [
               DropdownMenuItem(
-                child: Text("CONFIG"),
+                child: Text("DEBUG"),
                 value: Level.CONFIG,
               ),
               DropdownMenuItem(
@@ -286,13 +287,9 @@ class _LogConsoleState extends State<LogConsole> {
                 value: Level.WARNING,
               ),
               DropdownMenuItem(
-                child: Text("SEVERE"),
+                child: Text("ERROR"),
                 value: Level.SEVERE,
               ),
-              DropdownMenuItem(
-                child: Text("SHOUT"),
-                value: Level.SHOUT,
-              )
             ],
             onChanged: (dynamic value) {
               _filterLevel = value;
@@ -367,11 +364,11 @@ class LogBar extends StatelessWidget {
 }
 
 extension LevelExtension on Level {
-  Color toColor() {
+  Color toColor(bool dark) {
     if (this == Level.CONFIG) {
-      return Colors.black38;
+      return dark ? Colors.white38 : Colors.black38;
     } else if (this == Level.INFO) {
-      return Colors.black;
+      return dark ? Colors.white : Colors.black;
     } else if (this == Level.WARNING) {
       return Colors.orange;
     } else if (this == Level.SEVERE) {
@@ -379,7 +376,7 @@ extension LevelExtension on Level {
     } else if (this == Level.SHOUT) {
       return Colors.pinkAccent;
     } else {
-      return Colors.black;
+      return dark ? Colors.white : Colors.black;
     }
   }
 }
