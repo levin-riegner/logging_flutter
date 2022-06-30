@@ -128,9 +128,14 @@ Contributions are most welcome! Feel free to open a new issue or pull request to
 
 ### Deployment
 
-1. Run `manager clean` to prevent caching issues.
-2. Run `manager build` to build the project.
-3. Finally run `manager deploy` to deploy the project.
+1. Set the new version on the [pubspec.yaml](pubspec.yaml) `version` field.
+2. Update the [CHANGELOG.md](CHANGELOG.md) file documenting the changes.
+3. Update the [README.md](README.md) file if necessary.
+4. Run `dart doc` to update the documentation.
+5. Run `dart pub publish --dry-run` to ensure the package can be published successfully.
+6. Create a new tag with the release version `git tag -a x.y.z && git push --tags`.
+7. Navigate to [GitHub Releases](https://github.com/levin-riegner/logging_flutter/releases) and create a new release for the previously created tag, including the [CHANGELOG.md](CHANGELOG.md) changes.
+8. Finally run `dart pub publish` to deploy the project.
 
 ## Credits
 

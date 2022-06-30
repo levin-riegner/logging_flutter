@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:ffi';
 import 'package:flutter/foundation.dart';
-import 'package:logging_flutter/logging_flutter.dart';
 
 import 'package:flutter/material.dart';
+import 'package:logging_flutter/logging_flutter.dart';
 
 class SampleClass {
   final String name;

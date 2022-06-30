@@ -7,17 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2022-06-30
+
 ### Added
 
-- Configuration class for logs.
+- The plugin is now open-source.
 
-### Changed
+### Breaking
 
-- Log message format.
-
-### Fixed
-
-- Use correct colors for messages in the dark mode log console.
+- Removed shake dependency.
+- Refactored flogger class.
 
 ## [1.0.1] - 2022-03-07
 

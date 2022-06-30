@@ -1,4 +1,12 @@
-part of logging_flutter;
+import 'dart:collection';
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
+
+import 'ansi_parser.dart';
 
 ListQueue<OutputEvent> _outputEventBuffer = ListQueue();
 
