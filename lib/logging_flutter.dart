@@ -13,7 +13,7 @@ import 'src/ansi_parser.dart';
 import 'src/shake_detector.dart';
 
 export 'package:logging/src/level.dart';
-export 'src/shake_detector.dart';
+export 'flogger.dart';
 
 part 'src/log_console.dart';
 part 'src/log_console_on_shake.dart';

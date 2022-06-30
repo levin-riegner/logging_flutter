@@ -2,22 +2,24 @@ import "package:logging/logging.dart";
 import 'package:stack_trace/stack_trace.dart';
 
 class FloggerConfig {
-  static const defaultLoggerName = "App";
 
   final String loggerName;
   final bool printClassName;
   final bool printMethodName;
   final bool showDateTime;
   final bool showDebugLogs;
-  final bool Function(LogRecord)? mightContainSensitiveData;
 
   const FloggerConfig({
-    this.loggerName = defaultLoggerName,
+    // The name of default the logger
+    this.loggerName = "App",
+    // Print the class name where the log was triggered
     this.printClassName = true,
+    // Print the method name where the log was triggered
     this.printMethodName = false,
+    // Print the date and time when the log occurred
     this.showDateTime = false,
+    // Print logs with Debug severity
     this.showDebugLogs = true,
-    this.mightContainSensitiveData,
   });
 }
 
@@ -28,34 +30,34 @@ abstract class Flogger {
 
   Flogger._();
 
-  static init(FloggerConfig config) {
+  static init({FloggerConfig config = const FloggerConfig()}) {
     _config = config;
     _logger = Logger(_config.loggerName);
     Logger.root.level = _config.showDebugLogs ? Level.ALL : Level.INFO;
   }
 
   // region Log methods
-  static d(String message, {String? tag}) => _log(
+  static d(String message, {String? loggerName}) => _log(
         message,
-        tag: tag,
+        loggerName: loggerName,
         severity: Level.CONFIG,
       );
 
-  static i(String message, {String? tag}) => _log(
+  static i(String message, {String? loggerName}) => _log(
         message,
-        tag: tag,
+        loggerName: loggerName,
         severity: Level.INFO,
       );
 
-  static w(String message, {String? tag}) => _log(
+  static w(String message, {String? loggerName}) => _log(
         message,
-        tag: tag,
+        loggerName: loggerName,
         severity: Level.WARNING,
       );
 
-  static e(String message, {StackTrace? stackTrace, String? tag}) => _log(
+  static e(String message, {StackTrace? stackTrace, String? loggerName}) => _log(
         message,
-        tag: tag,
+        loggerName: loggerName,
         severity: Level.SEVERE,
         stackTrace: stackTrace,
       );
@@ -63,7 +65,7 @@ abstract class Flogger {
   // Log message to Logger
   static _log(
     String message, {
-    String? tag,
+    String? loggerName,
     required Level severity,
     StackTrace? stackTrace,
   }) {
@@ -88,7 +90,7 @@ abstract class Flogger {
 
     var logMessage = "";
     // Append logger name
-    logMessage += "${tag ?? _config.loggerName} ";
+    logMessage += "${loggerName ?? _config.loggerName} ";
     // Append Class name and Method name
     if (className != null && _config.printClassName) {
       if (methodName != null && _config.printMethodName) {
@@ -100,15 +102,15 @@ abstract class Flogger {
       logMessage += message;
     }
     // Log
-    if (tag == null) {
+    if (loggerName == null) {
       // Main logger
       _logger.log(severity, logMessage, null, stackTrace);
     } else {
       // Additional loggers
-      if (_children.containsKey(tag)) {
-        _children[tag]!.log(severity, logMessage, null, stackTrace);
+      if (_children.containsKey(loggerName)) {
+        _children[loggerName]!.log(severity, logMessage, null, stackTrace);
       } else {
-        _children[tag] = Logger(tag)
+        _children[loggerName] = Logger(loggerName)
           ..log(severity, logMessage, null, stackTrace);
       }
     }
@@ -120,8 +122,6 @@ abstract class Flogger {
     Logger.root.onRecord
         .map((e) => FloggerRecord.fromLogger(
               e,
-              mightContainSensitiveData:
-                  _config.mightContainSensitiveData?.call(e) ?? false,
               showDateTime: _config.showDateTime,
             ))
         .listen(onRecord);
@@ -129,16 +129,16 @@ abstract class Flogger {
 }
 
 class FloggerRecord {
-  final String message;
+  final String loggerName;
   final Level level;
+  final String message;
   final StackTrace? stackTrace;
-  final bool mightContainSensitiveData;
 
   FloggerRecord._(
+    this.loggerName,
     this.message,
     this.level,
     this.stackTrace,
-    this.mightContainSensitiveData,
   );
 
   static String _levelShort(Level level) {
@@ -157,7 +157,6 @@ class FloggerRecord {
 
   factory FloggerRecord.fromLogger(
     LogRecord record, {
-    required bool mightContainSensitiveData,
     required bool showDateTime,
   }) {
     // Get stacktrace from record stackTrace or record object
@@ -174,10 +173,10 @@ class FloggerRecord {
     if (record.object != null) message += " - ${record.object}";
     // Build Flogger record
     return FloggerRecord._(
+      record.loggerName,
       message,
       record.level,
       stackTrace,
-      mightContainSensitiveData,
     );
   }
 }

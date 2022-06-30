@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:ffi';
+import 'package:flutter/foundation.dart';
+import 'package:logging_flutter/logging_flutter.dart';
 
 import 'package:flutter/material.dart';
-import 'package:logging_flutter/flogger.dart';
-import 'package:logging_flutter/logging_flutter.dart';
 
 class SampleClass {
   final String name;
@@ -12,21 +13,21 @@ class SampleClass {
   SampleClass({this.name, this.id});
 
   static void printSomeLogs() {
-    Flogger.d("Debug log message");
+    Flogger.d("Debug message");
 
     Flogger.i("Info message");
     Flogger.i("Info message with object - ${SampleClass(name: "John", id: 1)}");
 
-    Flogger.w("A warning message");
+    Flogger.w("Warning message");
     try {
       throw Exception("Something bad happened");
     } catch (e) {
-      Flogger.w("Warning with exception $e");
+      Flogger.w("Warning message with exception $e");
     }
 
-    Flogger.e("Error with exception - ${Exception("Test Error")}");
+    Flogger.e("Error message with exception - ${Exception("Test Error")}");
 
-    Flogger.i("Record with a different tag", tag: "Dio");
+    Flogger.i("Info message with a different logger name", loggerName: "Dio");
 
     // throw Exception("This has been thrown");
   }
@@ -39,25 +40,34 @@ void main() {
   }, (error, stack) {
     // Catch and log crashes
     Flogger.e('Unhandled error - $error', stackTrace: stack);
-    Flogger.e("Stack trace: ${stack.toString().replaceAll("\n", " ")}");
   });
 }
 
 void init() {
   // Init
-  Flogger.init(FloggerConfig(
-    mightContainSensitiveData: (record) =>
-        record.loggerName != FloggerConfig.defaultLoggerName,
-  ));
-  // Send logs to Run console
-  Flogger.registerListener(
-      (record) => log(record.message, stackTrace: record.stackTrace));
+  Flogger.init(config: FloggerConfig());
+  if(kDebugMode) {
+    // Send logs to Run console
+    Flogger.registerListener(
+      (record) => log(record.message, stackTrace: record.stackTrace),
+    );
+  }
   // Send logs to App Console
   Flogger.registerListener(
     (record) => LogConsole.add(OutputEvent(record.level, [record.message])),
   );
   // You can also use "registerListener" to log to Crashlytics or any other services
-
+  if(kReleaseMode) {
+    Flogger.registerListener((record) { 
+      // Filter logs that may contain sensitive data
+      if(record.loggerName != "App") return false;
+      if(record.message.contains("apiKey")) return false;
+      if(record.message.contains("password")) return false;
+      // Send logs to logging services
+      // FirebaseCrashlytics.instance.log(record.message);
+      // DatadogSdk.instance.logs?.info(record.message);
+    });
+  }
   SampleClass.printSomeLogs();
 }
 

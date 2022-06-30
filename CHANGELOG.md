@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Configuration class for logs.
 
+### Changed
+
+- Log message format.
+
 ### Fixed
 
 - Use correct colors for messages in the dark mode log console.
