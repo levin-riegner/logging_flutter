@@ -1,5 +1,8 @@
 name: logging_flutter
-description: An extension of the Logging package for Flutter.
+description: >-
+  An extension of the Logging package for Flutter.
+  This package provides a simple tool for logging and viewing
+  messages in your applications.
 version: 2.0.1
 homepage: https://github.com/levin-riegner/logging_flutter
 repository: https://github.com/levin-riegner/logging_flutter

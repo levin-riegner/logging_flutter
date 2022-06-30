@@ -2,7 +2,6 @@ import "package:logging/logging.dart";
 import 'package:stack_trace/stack_trace.dart';
 
 class FloggerConfig {
-
   final String loggerName;
   final bool printClassName;
   final bool printMethodName;
@@ -55,7 +54,8 @@ abstract class Flogger {
         severity: Level.WARNING,
       );
 
-  static e(String message, {StackTrace? stackTrace, String? loggerName}) => _log(
+  static e(String message, {StackTrace? stackTrace, String? loggerName}) =>
+      _log(
         message,
         loggerName: loggerName,
         severity: Level.SEVERE,
