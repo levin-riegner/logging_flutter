@@ -95,6 +95,13 @@ Use the [LogConsole](lib/src/log_console.dart) class to view your logs inside th
     LogConsole.open(context)
     ```
 
+<p align="center">
+  <img alt="Log console light" src="doc/static/log_console_light.png" width="45%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="Log console dark" src="doc/static/log_console_dark.png" width="45%">
+</p>
+
+
 #### Multiple Loggers
 
 Use the `loggerName` parameter when adding logs to print them as a different logger. This can be useful for differentiating calls made from the different layers in your app. For example:
@@ -133,7 +140,7 @@ Contributions are most welcome! Feel free to open a new issue or pull request to
 3. Update the [README.md](README.md) file if necessary.
 4. Run `dart doc` to update the documentation.
 5. Run `dart pub publish --dry-run` to ensure the package can be published successfully.
-6. Create a new tag with the release version `git tag -a x.y.z && git push --tags`.
+6. Create a new tag with the release version `git tag -a x.y.z -m "x.y.z" && git push --tags`.
 7. Navigate to [GitHub Releases](https://github.com/levin-riegner/logging_flutter/releases) and create a new release for the previously created tag, including the [CHANGELOG.md](CHANGELOG.md) changes.
 8. Finally run `dart pub publish` to deploy the project.
 
