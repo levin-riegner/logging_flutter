@@ -92,12 +92,6 @@ class HomeWidget extends StatelessWidget {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          LogConsoleOnShake(
-            dark: true,
-            child: Center(
-              child: Text("Shake Phone to open Logs Console."),
-            ),
-          ),
           TextButton(
               onPressed: () => SampleClass.printSomeLogs(),
               child: Text("Print some Logs")),
@@ -108,9 +102,11 @@ class HomeWidget extends StatelessWidget {
               },
               child: Text("Throw Exception")),
           SizedBox(height: 16),
-          TextButton(
-              onPressed: () => LogConsole.open(context),
-              child: Text("or click here to open Logs Console")),
+          Center(
+            child: TextButton(
+                onPressed: () => LogConsole.open(context),
+                child: Text("or click here to open Logs Console")),
+          ),
         ],
       ),
     );

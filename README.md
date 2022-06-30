@@ -4,7 +4,7 @@ An extension of the [Logging](https://pub.dev/packages/logging) package for Flut
 
 ## Overview
 
-This package provides a simple class for logging messages in your applications.
+This package provides a simple tool for logging messages in your applications.
 
 ## Features
 

@@ -10,7 +10,7 @@ class FloggerConfig {
   final bool showDebugLogs;
 
   const FloggerConfig({
-    // The name of default the logger
+    // The default name for the logger
     this.loggerName = "App",
     // Print the class name where the log was triggered
     this.printClassName = true,
