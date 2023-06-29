@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
-import 'package:flutter/foundation.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logging_flutter/logging_flutter.dart';
 
@@ -9,7 +9,10 @@ class SampleClass {
   final String name;
   final int id;
 
-  SampleClass({this.name, this.id});
+  SampleClass({
+    required this.name,
+    required this.id,
+  });
 
   static void printSomeLogs() {
     Flogger.d("Debug message");
@@ -45,7 +48,7 @@ void main() {
 void init() {
   // Init
   Flogger.init(config: FloggerConfig());
-  if(kDebugMode) {
+  if (kDebugMode) {
     // Send logs to Run console
     Flogger.registerListener(
       (record) => log(record.message, stackTrace: record.stackTrace),
@@ -56,12 +59,12 @@ void init() {
     (record) => LogConsole.add(OutputEvent(record.level, [record.message])),
   );
   // You can also use "registerListener" to log to Crashlytics or any other services
-  if(kReleaseMode) {
-    Flogger.registerListener((record) { 
+  if (kReleaseMode) {
+    Flogger.registerListener((record) {
       // Filter logs that may contain sensitive data
-      if(record.loggerName != "App") return false;
-      if(record.message.contains("apiKey")) return false;
-      if(record.message.contains("password")) return false;
+      if (record.loggerName != "App") return;
+      if (record.message.contains("apiKey")) return;
+      if (record.message.contains("password")) return;
       // Send logs to logging services
       // FirebaseCrashlytics.instance.log(record.message);
       // DatadogSdk.instance.logs?.info(record.message);

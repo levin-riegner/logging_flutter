@@ -29,7 +29,7 @@ abstract class Flogger {
 
   Flogger._();
 
-  static init({FloggerConfig config = const FloggerConfig()}) {
+  static void init({FloggerConfig config = const FloggerConfig()}) {
     _config = config;
     _logger = Logger(_config.loggerName);
     Logger.root.level = _config.showDebugLogs ? Level.ALL : Level.INFO;
@@ -63,7 +63,7 @@ abstract class Flogger {
       );
 
   // Log message to Logger
-  static _log(
+  static void _log(
     String message, {
     String? loggerName,
     required Level severity,

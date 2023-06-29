@@ -1,10 +1,10 @@
 # Logging Flutter
 
-An extension of the [Logging](https://pub.dev/packages/logging) package for Flutter.
+Flutter extension for the official [logging](https://pub.dev/packages/logging) package.
 
 ## Overview
 
-This package provides a simple tool for logging messages in your applications.
+This package provides a simple tool for logging messages in your applications and a set of additional utilities.
 
 ## Features
 
@@ -100,7 +100,6 @@ Use the [LogConsole](lib/src/log_console.dart) class to view your logs inside th
 &nbsp; &nbsp; &nbsp; &nbsp;
   <img alt="Log console dark" src="doc/static/log_console_dark.png" width="45%">
 </p>
-
 
 #### Multiple Loggers
 
