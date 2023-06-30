@@ -1,6 +1,6 @@
 # Logging Flutter
 
-Flutter extension for the official [logging](https://pub.dev/packages/logging) package.
+Flutter extension for the [logging](https://pub.dev/packages/logging) package.
 
 ## Overview
 
@@ -12,12 +12,13 @@ This package provides a simple tool for logging messages in your applications an
 - Send logs to 3rd party services (ie: Crashlytics, DataDog, etc.)
 - Print class and method names where the log was triggered.
 - View and share all logs from inside the app.
+- Capture and format [logging](https://pub.dev/packages/logging) logs from 3rd party packages.
 
 ## Get Started
 
 ### Initializing
 
-Use the [Flogger](lib/flogger.dart) static class to access all logging methods.
+Use the [Flogger](lib/src/flogger.dart) static class to access all logging methods.
 
 1. Initialize the logger.
 
@@ -59,7 +60,7 @@ These calls will result in the logs below when using the default configuration:
 
 #### Configuration
 
-Use the [FloggerConfig](lib/flogger.dart) class when initializing the Flogger to configure its usage:
+Use the [FloggerConfig](lib/src/flogger.dart) class when initializing the Flogger to configure how logs are printed:
 
 ```dart
 Flogger.init(config: FloggerConfig(...));
@@ -74,6 +75,9 @@ FloggerConfig({
     this.showDateTime = false,
     // Print logs with Debug severity
     this.showDebugLogs = true,
+    // Print logs with a custom format
+    // If set, ignores all other print options
+    final FloggerPrinter? printer,
 });
 ```
 
@@ -85,7 +89,10 @@ Use the [LogConsole](lib/src/log_console.dart) class to view your logs inside th
 
     ```dart
     Flogger.registerListener(
-        (record) => LogConsole.add(OutputEvent(record.level, [record.message])),
+      (record) => LogConsole.add(
+          OutputEvent(record.level, [record.printable()]),
+          bufferSize: 1000, // Remember the last X logs
+      ),
     );
     ```
 
@@ -118,9 +125,9 @@ Register additional listeners to send logs to different services, for example:
 if (kReleaseMode) {
     Flogger.registerListener((record) {
         // Filter logs that may contain sensitive data
-        if(record.loggerName != "App") return false;
-        if(record.message.contains("apiKey")) return false;
-        if(record.message.contains("password")) return false;
+        if(record.loggerName != "App") return;
+        if(record.message.contains("apiKey")) return;
+        if(record.message.contains("password")) return;
         // Log to 3rd party services
         FirebaseCrashlytics.instance.log(record.message);
         DatadogSdk.instance.logs?.info(record.message);
@@ -132,7 +139,7 @@ if (kReleaseMode) {
 
 Contributions are most welcome! Feel free to open a new issue or pull request to make this project better.
 
-### Deployment
+## Deployment
 
 1. Set the new version on the [pubspec.yaml](pubspec.yaml) `version` field.
 2. Update the [CHANGELOG.md](CHANGELOG.md) file documenting the changes.

@@ -12,5 +12,7 @@ dependencies:
   logging_flutter:
     path: ../
 
+  logging: "^1.1.0"
+
 flutter:
   uses-material-design: true

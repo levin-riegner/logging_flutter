@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.1.0
+
+### Added
+
+- Capture logs from external packages.
+- Updated dependencies.
+
 ## 2.0.1
 
 ### Added
