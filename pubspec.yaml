@@ -3,13 +3,22 @@ description: >-
   Flutter extension for the logging package.
   This package provides a simple tool for logging messages 
   in your applications and a set of additional utilities.
-version: 2.1.0
+version: 3.0.0
 homepage: https://github.com/levin-riegner/logging_flutter
 repository: https://github.com/levin-riegner/logging_flutter
 documentation: https://github.com/levin-riegner/logging_flutter
 platforms:
   android:
   ios:
+screenshots:
+  - description: "This screenshot shows the log console UI in dark mode."
+    path: doc/static/log_console_dark.png
+  - description: "This screenshot shows the log console UI in light mode."
+    path: doc/static/log_console_light.png
+topics:
+  - logging
+  - console
+  - extension
 
 environment:
   sdk: ">=2.12.0 <4.0.0"

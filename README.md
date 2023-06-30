@@ -31,7 +31,7 @@ Use the [Flogger](lib/src/flogger.dart) static class to access all logging metho
     ```dart
     if (kDebugMode){
         Flogger.registerListener(
-            (record) => log(record.message, stackTrace: record.stackTrace),
+            (record) => log(record.printable(), stackTrace: record.stackTrace),
         );
     }
     ```
@@ -129,8 +129,8 @@ if (kReleaseMode) {
         if(record.message.contains("apiKey")) return;
         if(record.message.contains("password")) return;
         // Log to 3rd party services
-        FirebaseCrashlytics.instance.log(record.message);
-        DatadogSdk.instance.logs?.info(record.message);
+        FirebaseCrashlytics.instance.log(record.printable());
+        DatadogSdk.instance.logs?.info(record.printable());
     });
 }
 ```
