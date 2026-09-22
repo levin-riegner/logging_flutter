@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## 4.0.0
+
+### Breaking
+
+- Require Dart 3.12 and Flutter 3.47 or newer.
+- `Flogger.clearListeners()` now cancels only listeners registered through `Flogger`; it no longer clears unrelated listeners on `Logger.root`.
+- `LogConsole.add` rejects non-positive `bufferSize` values. An explicit `null` uses the default capacity of 1000.
+
+### Added and fixed
+
+- `Flogger.registerListener` returns a registration that can be cancelled independently.
+- Records without a discoverable logger stack frame retain their message and level, with null class and method names.
+- `LogConsole` updates while open and exposes `clear()` to empty its buffer.
+- Copy includes every filtered log entry with its original letter case, including offscreen entries.
+- Truncated and malformed ANSI sequences no longer disappear or throw.
+- Updated dependencies, CI checks, and the Android and iOS example projects.
+
+See [MIGRATION.md](MIGRATION.md) for upgrade guidance.
+
 ## 3.0.0
 
 > Note: This release has breaking changes.
