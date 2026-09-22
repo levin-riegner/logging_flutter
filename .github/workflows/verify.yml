@@ -4,6 +4,7 @@ on:
   push:
     branches: [master, main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
 
 permissions:
   contents: read
@@ -14,8 +15,11 @@ concurrency:
 
 jobs:
   verify:
-    # Only trusted branches and same-repository PRs run code on the shared Mac.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Schedule the shared runner only for ready, same-repository PRs.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
