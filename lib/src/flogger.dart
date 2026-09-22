@@ -78,10 +78,7 @@ class FloggerRecord {
   );
 
   /// Create a [FloggerRecord] from a [LogRecord]
-  factory FloggerRecord.fromLogger(
-    LogRecord record,
-    FloggerConfig config,
-  ) {
+  factory FloggerRecord.fromLogger(LogRecord record, FloggerConfig config) {
     // Get ClassName and MethodName
     final classAndMethodNames = _getClassAndMethodNames(_getLogFrame()!);
     String? className = classAndMethodNames.key;
@@ -153,11 +150,13 @@ class FloggerRecord {
       final loggingFlutterLibrary = "package:logging_flutter/src/flogger.dart";
       final currentFrames = Trace.current().frames.toList();
       // Remove all frames from the logging_flutter library
-      currentFrames
-          .removeWhere((element) => element.library == loggingFlutterLibrary);
+      currentFrames.removeWhere(
+        (element) => element.library == loggingFlutterLibrary,
+      );
       // Capture the last frame from the logging library
-      final lastLoggerIndex = currentFrames
-          .lastIndexWhere((element) => element.library == loggingLibrary);
+      final lastLoggerIndex = currentFrames.lastIndexWhere(
+        (element) => element.library == loggingLibrary,
+      );
       return currentFrames[lastLoggerIndex + 1];
     } catch (e) {}
     return null;
@@ -204,25 +203,16 @@ abstract class Flogger {
   }
 
   /// Log a DEBUG message with CONFIG [Level]
-  static d(String message, {String? loggerName}) => _log(
-        message,
-        loggerName: loggerName,
-        severity: Level.CONFIG,
-      );
+  static d(String message, {String? loggerName}) =>
+      _log(message, loggerName: loggerName, severity: Level.CONFIG);
 
   /// Log an INFO message with INFO [Level]
-  static i(String message, {String? loggerName}) => _log(
-        message,
-        loggerName: loggerName,
-        severity: Level.INFO,
-      );
+  static i(String message, {String? loggerName}) =>
+      _log(message, loggerName: loggerName, severity: Level.INFO);
 
   /// Log a WARNING message with WARNING [Level]
-  static w(String message, {String? loggerName}) => _log(
-        message,
-        loggerName: loggerName,
-        severity: Level.WARNING,
-      );
+  static w(String message, {String? loggerName}) =>
+      _log(message, loggerName: loggerName, severity: Level.WARNING);
 
   /// Log an ERROR message with SEVERE [Level]
   static e(String message, {StackTrace? stackTrace, String? loggerName}) =>
