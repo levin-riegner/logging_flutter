@@ -109,6 +109,8 @@ Use the [LogConsole](lib/src/log_console.dart) class to view your logs inside th
 
 The console updates while it is open. Search and severity filters apply to the displayed list and to Copy; copied text includes every matching row in its original case. `LogConsole.clear()` removes buffered logs. `bufferSize` must be positive and defaults to 1000.
 
+`LogConsole.open` uses the system light or dark setting by default. Pass `dark: true` or `dark: false` when your app's theme differs from the system setting. The console uses Flutter's core widgets, so it can open from Material, Cupertino, or custom widget apps.
+
 <p align="center">
   <img alt="Log console light" src="doc/static/log_console_light.png" width="45%">
 &nbsp; &nbsp; &nbsp; &nbsp;
