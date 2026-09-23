@@ -19,7 +19,7 @@ All notable changes to this project will be documented in this file.
 - Copy includes every filtered log entry with its original letter case, including offscreen entries.
 - Truncated and malformed ANSI sequences no longer disappear or throw.
 - The in-app console uses Flutter core widgets without Material or Cupertino components.
-- The console wraps long rows and adapts its controls to narrow screens and larger text.
+- The console wraps long rows and uses round, accessible controls that fit narrow screens and larger text.
 - Updated dependencies, CI checks, and the Android and iOS example projects.
 
 See [MIGRATION.md](MIGRATION.md) for upgrade guidance.

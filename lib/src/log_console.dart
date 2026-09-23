@@ -89,7 +89,6 @@ class _LogConsoleState extends State<LogConsole> {
 
   Level _filterLevel = Level.CONFIG;
   double _logFontSize = 14;
-  bool _showLevelMenu = false;
 
   var _currentId = 0;
   bool _scrollListenerEnabled = true;
@@ -219,32 +218,18 @@ class _LogConsoleState extends State<LogConsole> {
                           const SizedBox(height: 8),
                           Expanded(child: _buildLogContent()),
                           const SizedBox(height: 8),
-                          _buildBottomBar(compact: compact),
+                          _buildBottomBar(),
                         ],
                       ),
-                      if (_showLevelMenu) ...[
-                        Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => setState(() => _showLevelMenu = false),
-                          ),
-                        ),
-                        Positioned(
-                          right: 12,
-                          bottom: compact ? 164 : 116,
-                          child: _buildLevelMenu(),
-                        ),
-                      ],
-                      if (!_followBottom && !_showLevelMenu)
+                      if (!_followBottom)
                         Positioned(
                           right: 16,
-                          bottom: compact ? 172 : 124,
-                          child: _ConsoleButton(
-                            label: '↓ Latest',
+                          bottom: 142,
+                          child: _RoundControl(
+                            dark: widget.dark,
+                            icon: _ControlIcon.latest,
                             semanticsLabel: 'Jump to latest log',
-                            color: widget.dark
-                                ? const Color(0xFFFFFFFF)
-                                : const Color(0xFF01579B),
+                            accent: true,
                             onPressed: _scrollToBottom,
                           ),
                         ),
@@ -370,12 +355,11 @@ class _LogConsoleState extends State<LogConsole> {
     final actions = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ConsoleButton(
-          label: 'Copy',
+        _RoundControl(
+          dark: widget.dark,
+          icon: _ControlIcon.copy,
           semanticsLabel: 'Copy filtered logs',
-          color: widget.dark
-              ? const Color(0xFF69F0AE)
-              : const Color(0xFF006B3C),
+          accent: true,
           onPressed: () {
             Clipboard.setData(
               ClipboardData(
@@ -386,15 +370,15 @@ class _LogConsoleState extends State<LogConsole> {
             );
           },
         ),
-        if (widget.showCloseButton)
-          _ConsoleButton(
-            label: 'Close',
+        if (widget.showCloseButton) ...[
+          const SizedBox(width: 8),
+          _RoundControl(
+            dark: widget.dark,
+            icon: _ControlIcon.close,
             semanticsLabel: 'Close log console',
-            color: widget.dark
-                ? const Color(0xFFECEFF1)
-                : const Color(0xFF263238),
             onPressed: () => Navigator.pop(context),
           ),
+        ],
       ],
     );
     return LogBar(
@@ -412,38 +396,42 @@ class _LogConsoleState extends State<LogConsole> {
     );
   }
 
-  Widget _buildBottomBar({required bool compact}) {
-    final foreground = widget.dark
-        ? const Color(0xFFFFFFFF)
-        : const Color(0xFF000000);
+  Widget _buildBottomBar() {
+    const levels = [Level.CONFIG, Level.INFO, Level.WARNING, Level.SEVERE];
     final levelControl = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Level'),
-        const SizedBox(width: 8),
-        _ConsoleButton(
-          label: _levelLabel(_filterLevel),
-          semanticsLabel: 'Filter log level',
-          color: foreground,
-          onPressed: () => setState(() => _showLevelMenu = true),
-        ),
+        for (final level in levels) ...[
+          if (level != levels.first) const SizedBox(width: 4),
+          _RoundControl(
+            dark: widget.dark,
+            label: _shortLevelLabel(level),
+            semanticsLabel: 'Filter logs from ${_levelLabel(level)} level',
+            selected: _filterLevel == level,
+            onPressed: () {
+              _filterLevel = level;
+              _refreshFilter();
+            },
+          ),
+        ],
       ],
     );
     final fontControls = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ConsoleButton(
+        _RoundControl(
+          dark: widget.dark,
           label: 'A−',
           semanticsLabel: 'Decrease log font size',
-          color: foreground,
           onPressed: () {
             if (_logFontSize > 11) setState(() => _logFontSize--);
           },
         ),
-        _ConsoleButton(
+        const SizedBox(width: 4),
+        _RoundControl(
+          dark: widget.dark,
           label: 'A+',
           semanticsLabel: 'Increase log font size',
-          color: foreground,
           onPressed: () {
             if (_logFontSize < 24) setState(() => _logFontSize++);
           },
@@ -451,21 +439,25 @@ class _LogConsoleState extends State<LogConsole> {
       ],
     );
     return SizedBox(
-      height: compact ? 156 : 108,
+      height: MediaQuery.textScalerOf(context).scale(10) > 13 ? 148 : 132,
       child: ColoredBox(
         color: widget.dark ? const Color(0xFF263238) : const Color(0xFFFFFFFF),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(height: 44, child: _buildSearchField()),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text('LEVEL', style: _controlCaptionStyle()),
+                  const Spacer(),
+                  Text('TEXT SIZE', style: _controlCaptionStyle()),
+                ],
+              ),
               const SizedBox(height: 4),
-              if (compact) ...[
-                Align(alignment: Alignment.centerLeft, child: levelControl),
-                const SizedBox(height: 4),
-                Align(alignment: Alignment.centerRight, child: fontControls),
-              ] else
-                Row(children: [levelControl, const Spacer(), fontControls]),
+              Row(children: [levelControl, const Spacer(), fontControls]),
             ],
           ),
         ),
@@ -473,23 +465,43 @@ class _LogConsoleState extends State<LogConsole> {
     );
   }
 
+  TextStyle _controlCaptionStyle() => TextStyle(
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.2,
+    color: widget.dark ? const Color(0xFFB0BEC5) : const Color(0xFF546E7A),
+  );
+
   Widget _buildSearchField() {
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: widget.dark ? const Color(0xFF1C2A30) : const Color(0xFFF2F6F7),
         border: Border.all(
           color: widget.dark
-              ? const Color(0xFF78909C)
-              : const Color(0xFF90A4AE),
+              ? const Color(0xFF52646D)
+              : const Color(0xFFCEDCE1),
         ),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(22),
       ),
       child: Stack(
         fit: StackFit.expand,
         children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 14),
+              child: _ControlGlyph(
+                icon: _ControlIcon.search,
+                color: widget.dark
+                    ? const Color(0xFFB0BEC5)
+                    : const Color(0xFF546E7A),
+              ),
+            ),
+          ),
           if (_filterController.text.isEmpty)
             const IgnorePointer(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
+                padding: EdgeInsets.only(left: 42),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text('Search logs'),
@@ -498,7 +510,7 @@ class _LogConsoleState extends State<LogConsole> {
             ),
           Padding(
             padding: EdgeInsets.only(
-              left: 12,
+              left: 42,
               right: _filterController.text.isEmpty ? 12 : 48,
             ),
             child: Align(
@@ -524,12 +536,10 @@ class _LogConsoleState extends State<LogConsole> {
           if (_filterController.text.isNotEmpty)
             Align(
               alignment: Alignment.centerRight,
-              child: _ConsoleButton(
-                label: '×',
+              child: _RoundControl(
+                dark: widget.dark,
+                icon: _ControlIcon.close,
                 semanticsLabel: 'Clear search',
-                color: widget.dark
-                    ? const Color(0xFFB0BEC5)
-                    : const Color(0xFF546E7A),
                 onPressed: () {
                   _filterController.clear();
                   _refreshFilter();
@@ -537,47 +547,6 @@ class _LogConsoleState extends State<LogConsole> {
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLevelMenu() {
-    return SizedBox(
-      width: 128,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: widget.dark
-              ? const Color(0xFF263238)
-              : const Color(0xFFFFFFFF),
-          border: Border.all(
-            color: widget.dark
-                ? const Color(0xFF607D8B)
-                : const Color(0xFFBDBDBD),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final level in [
-              Level.CONFIG,
-              Level.INFO,
-              Level.WARNING,
-              Level.SEVERE,
-            ])
-              _ConsoleButton(
-                label: _levelLabel(level),
-                color: widget.dark
-                    ? const Color(0xFFFFFFFF)
-                    : const Color(0xFF000000),
-                onPressed: () {
-                  _filterLevel = level;
-                  setState(() => _showLevelMenu = false);
-                  _refreshFilter();
-                },
-              ),
-          ],
-        ),
       ),
     );
   }
@@ -658,63 +627,108 @@ class LogBar extends StatelessWidget {
   }
 }
 
-class _ConsoleButton extends StatefulWidget {
-  const _ConsoleButton({
-    required this.label,
-    required this.color,
+class _RoundControl extends StatefulWidget {
+  const _RoundControl({
+    required this.dark,
     required this.onPressed,
-    this.semanticsLabel,
-  });
+    required this.semanticsLabel,
+    this.label,
+    this.icon,
+    this.selected,
+    this.accent = false,
+  }) : assert(label != null || icon != null);
 
-  final String label;
-  final String? semanticsLabel;
-  final Color color;
+  final bool dark;
+  final String? label;
+  final _ControlIcon? icon;
+  final String semanticsLabel;
+  final bool? selected;
+  final bool accent;
   final VoidCallback onPressed;
 
   @override
-  State<_ConsoleButton> createState() => _ConsoleButtonState();
+  State<_RoundControl> createState() => _RoundControlState();
 }
 
-class _ConsoleButtonState extends State<_ConsoleButton> {
+class _RoundControlState extends State<_RoundControl> {
   bool _focused = false;
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = widget.dark
+        ? const Color(0xFF67E1AE)
+        : const Color(0xFF087B57);
+    final foreground = widget.selected == true
+        ? (widget.dark ? const Color(0xFF09291E) : const Color(0xFFFFFFFF))
+        : widget.accent
+        ? accentColor
+        : (widget.dark ? const Color(0xFFF3F7F8) : const Color(0xFF24343B));
+    final background = widget.selected == true
+        ? accentColor
+        : widget.accent
+        ? (widget.dark ? const Color(0xFF214235) : const Color(0xFFE2F4EA))
+        : (widget.dark ? const Color(0xFF36474F) : const Color(0xFFF0F4F5));
+    final border = widget.selected == true
+        ? accentColor
+        : (widget.dark ? const Color(0xFF5A6D75) : const Color(0xFFCFDCE0));
     return Semantics(
       button: true,
-      label: widget.semanticsLabel ?? widget.label,
-      child: FocusableActionDetector(
-        onShowFocusHighlight: (focused) => setState(() => _focused = focused),
-        shortcuts: const {
-          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
-          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
-        },
-        actions: {
-          ActivateIntent: CallbackAction<ActivateIntent>(
-            onInvoke: (_) {
-              widget.onPressed();
-              return null;
-            },
-          ),
-        },
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onPressed,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: _focused ? widget.color.withValues(alpha: 0.2) : null,
-              borderRadius: BorderRadius.circular(4),
+      selected: widget.selected,
+      label: widget.semanticsLabel,
+      onTap: widget.onPressed,
+      child: ExcludeSemantics(
+        child: FocusableActionDetector(
+          onShowFocusHighlight: (focused) => setState(() => _focused = focused),
+          shortcuts: const {
+            SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+            SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+          },
+          actions: {
+            ActivateIntent: CallbackAction<ActivateIntent>(
+              onInvoke: (_) {
+                widget.onPressed();
+                return null;
+              },
             ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Center(
-                  child: Text(
-                    widget.label,
-                    style: TextStyle(color: widget.color, fontSize: 18),
-                  ),
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapUp: (_) => setState(() => _pressed = false),
+            onTapCancel: () => setState(() => _pressed = false),
+            onTap: widget.onPressed,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _pressed
+                    ? Color.lerp(background, foreground, 0.16)
+                    : background,
+                border: Border.all(
+                  color: _focused ? accentColor : border,
+                  width: _focused ? 2 : 1,
                 ),
+              ),
+              child: Center(
+                child: widget.icon != null
+                    ? _ControlGlyph(icon: widget.icon!, color: foreground)
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.label!,
+                            style: TextStyle(
+                              color: foreground,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
@@ -722,6 +736,69 @@ class _ConsoleButtonState extends State<_ConsoleButton> {
       ),
     );
   }
+}
+
+enum _ControlIcon { copy, close, latest, search }
+
+class _ControlGlyph extends StatelessWidget {
+  const _ControlGlyph({required this.icon, required this.color});
+
+  final _ControlIcon icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    size: const Size(20, 20),
+    painter: _ControlGlyphPainter(icon, color),
+  );
+}
+
+class _ControlGlyphPainter extends CustomPainter {
+  const _ControlGlyphPainter(this.icon, this.color);
+
+  final _ControlIcon icon;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 20, size.height / 20);
+    final stroke = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    switch (icon) {
+      case _ControlIcon.copy:
+        canvas.drawLine(const Offset(4, 14), const Offset(4, 3), stroke);
+        canvas.drawLine(const Offset(4, 3), const Offset(14, 3), stroke);
+        canvas.drawLine(const Offset(14, 3), const Offset(14, 5), stroke);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(7, 6, 10, 12),
+            const Radius.circular(1.5),
+          ),
+          stroke,
+        );
+      case _ControlIcon.close:
+        canvas.drawLine(const Offset(5, 5), const Offset(15, 15), stroke);
+        canvas.drawLine(const Offset(15, 5), const Offset(5, 15), stroke);
+      case _ControlIcon.latest:
+        canvas.drawLine(const Offset(10, 3), const Offset(10, 14), stroke);
+        canvas.drawLine(const Offset(5, 10), const Offset(10, 15), stroke);
+        canvas.drawLine(const Offset(10, 15), const Offset(15, 10), stroke);
+        canvas.drawLine(const Offset(4, 18), const Offset(16, 18), stroke);
+      case _ControlIcon.search:
+        canvas.drawCircle(const Offset(8.5, 8.5), 5, stroke);
+        canvas.drawLine(const Offset(12.5, 12.5), const Offset(17, 17), stroke);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ControlGlyphPainter oldDelegate) =>
+      icon != oldDelegate.icon || color != oldDelegate.color;
 }
 
 extension LevelExtension on Level {

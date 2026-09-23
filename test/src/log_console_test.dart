@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging_flutter/logging_flutter.dart';
 
@@ -31,7 +32,7 @@ void main() {
       () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
     );
 
-    await tester.tap(find.text('Copy'));
+    await tester.tap(find.bySemanticsLabel('Copy filtered logs'));
     await tester.pump();
     return copied;
   }
@@ -83,9 +84,7 @@ void main() {
     LogConsole.add(OutputEvent(Level.WARNING, ['WarningOnly']));
     await tester.pumpWidget(neutralApp(LogConsole()));
 
-    await tester.tap(find.text('DEBUG'));
-    await tester.pump();
-    await tester.tap(find.text('WARNING'));
+    await tester.tap(find.bySemanticsLabel('Filter logs from WARNING level'));
     await tester.pump();
 
     expect(find.textContaining('InfoOnly'), findsNothing);
@@ -132,7 +131,7 @@ void main() {
     expect(find.text('Logs'), findsOneWidget);
     expect(find.byType(WidgetsApp), findsOneWidget);
 
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.bySemanticsLabel('Close log console'));
     await tester.pumpAndSettle();
     expect(find.text('Logs'), findsNothing);
   });
@@ -169,7 +168,22 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Search logs'), findsOneWidget);
-    expect(find.text('Close'), findsOneWidget);
+    expect(find.bySemanticsLabel('Close log console'), findsOneWidget);
+    for (final label in [
+      'Copy filtered logs',
+      'Close log console',
+      'Filter logs from DEBUG level',
+      'Increase log font size',
+    ]) {
+      expect(tester.getSize(find.bySemanticsLabel(label)), const Size(44, 44));
+    }
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel('Close log console'))
+          .getSemanticsData()
+          .hasAction(SemanticsAction.tap),
+      isTrue,
+    );
   });
 
   test('rejects a non-positive buffer size', () {
