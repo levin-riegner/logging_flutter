@@ -83,31 +83,31 @@ class AnsiParser {
 
     switch (codes[0]) {
       case 0:
-        foreground = getColor(0, true);
-        background = getColor(0, false);
+        foreground = null;
+        background = null;
         break;
       case 38:
         if (codes.length >= 3 && codes[1] == 5) {
-          foreground = getColor(codes[2], true);
+          foreground = getColor(codes[2]);
         }
         break;
       case 39:
-        foreground = getColor(0, true);
+        foreground = null;
         break;
       case 48:
         if (codes.length >= 3 && codes[1] == 5) {
-          background = getColor(codes[2], false);
+          background = getColor(codes[2]);
         }
         break;
       case 49:
-        background = getColor(0, false);
+        background = null;
     }
   }
 
-  Color? getColor(int colorCode, bool foreground) {
+  Color? getColor(int colorCode) {
     switch (colorCode) {
       case 0:
-        return foreground ? Colors.black : Colors.transparent;
+        return Colors.black;
       case 12:
         return dark ? Colors.lightBlue[300] : Colors.indigo[700];
       case 208:
@@ -117,7 +117,7 @@ class AnsiParser {
       case 199:
         return dark ? Colors.pink[300] : Colors.pink[700];
     }
-    return foreground ? Colors.black : Colors.transparent;
+    return null;
   }
 
   TextSpan createSpan(String text) {

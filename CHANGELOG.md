@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - `LogConsole` updates while open and exposes `clear()` to empty its buffer.
 - Copy includes every filtered log entry with its original letter case, including offscreen entries.
 - Truncated and malformed ANSI sequences no longer disappear or throw.
+- ANSI-colored entries search and copy as displayed; color resets inherit the console theme.
 - Updated dependencies, CI checks, and the Android and iOS example projects.
 
 See [MIGRATION.md](MIGRATION.md) for upgrade guidance.
