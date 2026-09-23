@@ -164,5 +164,49 @@ void main() {
         "external warning",
       ]);
     });
+
+    test("clearListeners preserves unrelated root listeners", () async {
+      final externalRecords = <LogRecord>[];
+      final externalSubscription = Logger.root.onRecord.listen(
+        externalRecords.add,
+      );
+      addTearDown(externalSubscription.cancel);
+      final floggerRecords = <FloggerRecord>[];
+      Flogger.registerListener(floggerRecords.add);
+
+      Flogger.i("before");
+      Flogger.clearListeners();
+      Flogger.i("after");
+
+      expect(floggerRecords.map((record) => record.message), ["before"]);
+      expect(externalRecords.map((record) => record.message), [
+        "before",
+        "after",
+      ]);
+    });
+
+    test("a registration can be cancelled independently", () async {
+      final firstRecords = <FloggerRecord>[];
+      final secondRecords = <FloggerRecord>[];
+      final firstRegistration = Flogger.registerListener(firstRecords.add);
+      Flogger.registerListener(secondRecords.add);
+
+      await firstRegistration.cancel();
+      Flogger.i("still delivered");
+
+      expect(firstRecords, isEmpty);
+      expect(secondRecords.single.message, "still delivered");
+    });
+
+    test("manual records without logger frames retain their data", () {
+      final source = LogRecord(Level.INFO, "manual", "Manual");
+
+      final record = FloggerRecord.fromLogger(source, const FloggerConfig());
+
+      expect(record.message, "manual");
+      expect(record.loggerName, "Manual");
+      expect(record.className, isNull);
+      expect(record.methodName, isNull);
+    });
   });
 }

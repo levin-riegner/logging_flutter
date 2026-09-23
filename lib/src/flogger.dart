@@ -1,8 +1,27 @@
+import 'dart:async';
+
 import "package:logging/logging.dart";
 import 'package:stack_trace/stack_trace.dart';
 
 typedef FloggerPrinter = String Function(FloggerRecord record);
 typedef FloggerListener = void Function(FloggerRecord record);
+
+/// A listener owned by [Flogger]. Cancel it without affecting other listeners.
+class FloggerListenerRegistration {
+  final StreamSubscription<FloggerRecord> _subscription;
+  final void Function(FloggerListenerRegistration) _onCancel;
+  bool _cancelled = false;
+
+  FloggerListenerRegistration._(this._subscription, this._onCancel);
+
+  /// Stop receiving records. Calling this more than once is safe.
+  Future<void> cancel() {
+    if (_cancelled) return Future<void>.value();
+    _cancelled = true;
+    _onCancel(this);
+    return _subscription.cancel();
+  }
+}
 
 /// Configuration options for [LogRecord]
 class FloggerConfig {
@@ -80,7 +99,10 @@ class FloggerRecord {
   /// Create a [FloggerRecord] from a [LogRecord]
   factory FloggerRecord.fromLogger(LogRecord record, FloggerConfig config) {
     // Get ClassName and MethodName
-    final classAndMethodNames = _getClassAndMethodNames(_getLogFrame()!);
+    final frame = _getLogFrame();
+    final classAndMethodNames = frame == null
+        ? const MapEntry<String?, String?>(null, null)
+        : _getClassAndMethodNames(frame);
     String? className = classAndMethodNames.key;
     String? methodName = classAndMethodNames.value;
     // Get stacktrace from record stackTrace or record object
@@ -157,6 +179,9 @@ class FloggerRecord {
       final lastLoggerIndex = currentFrames.lastIndexWhere(
         (element) => element.library == loggingLibrary,
       );
+      if (lastLoggerIndex < 0 || lastLoggerIndex + 1 >= currentFrames.length) {
+        return null;
+      }
       return currentFrames[lastLoggerIndex + 1];
     } catch (e) {}
     return null;
@@ -192,6 +217,7 @@ class FloggerRecord {
 abstract class Flogger {
   static FloggerConfig _config = FloggerConfig();
   static Logger _logger = Logger(_config.loggerName);
+  static final Set<FloggerListenerRegistration> _registrations = {};
 
   Flogger._();
 
@@ -240,14 +266,24 @@ abstract class Flogger {
 
   /// Register a listener to listen to all logs
   /// Logs are emitted as [FloggerRecord]
-  static registerListener(FloggerListener onRecord) {
-    Logger.root.onRecord
+  static FloggerListenerRegistration registerListener(
+    FloggerListener onRecord,
+  ) {
+    final subscription = Logger.root.onRecord
         .map((e) => FloggerRecord.fromLogger(e, _config))
         .listen(onRecord);
+    final registration = FloggerListenerRegistration._(
+      subscription,
+      _registrations.remove,
+    );
+    _registrations.add(registration);
+    return registration;
   }
 
-  /// Clear all log listeners
+  /// Clear listeners registered through [Flogger] only.
   static clearListeners() {
-    Logger.root.clearListeners();
+    for (final registration in _registrations.toList()) {
+      unawaited(registration.cancel());
+    }
   }
 }
