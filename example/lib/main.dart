@@ -146,7 +146,13 @@ class HomeWidget extends StatelessWidget {
           Center(
             child: TextButton(
               onPressed: () => LogConsole.open(context, dark: true),
-              child: Text("or click here to open Logs Console"),
+              child: Text("Open dark Logs Console"),
+            ),
+          ),
+          Center(
+            child: TextButton(
+              onPressed: () => LogConsole.open(context, dark: false),
+              child: Text("Open light Logs Console"),
             ),
           ),
         ],

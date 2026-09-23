@@ -171,55 +171,87 @@ class _LogConsoleState extends State<LogConsole> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTextStyle(
-      style: TextStyle(
-        inherit: false,
-        color: widget.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
-        fontSize: 14,
-        decoration: TextDecoration.none,
-      ),
-      child: ColoredBox(
-        color: widget.dark ? const Color(0xFF000000) : const Color(0xFFF5F5F5),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: SafeArea(
-            child: Stack(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _buildTopBar(context),
-                    const SizedBox(height: 8),
-                    Expanded(child: _buildLogContent()),
-                    const SizedBox(height: 8),
-                    _buildBottomBar(),
-                  ],
-                ),
-                if (_showLevelMenu) ...[
-                  Positioned.fill(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => setState(() => _showLevelMenu = false),
-                    ),
-                  ),
-                  Positioned(right: 12, bottom: 68, child: _buildLevelMenu()),
-                ],
-                if (!_followBottom && !_showLevelMenu)
-                  Positioned(
-                    right: 16,
-                    bottom: 76,
-                    child: _ConsoleButton(
-                      label: '↓',
-                      semanticsLabel: 'Jump to latest log',
-                      color: widget.dark
-                          ? const Color(0xFFFFFFFF)
-                          : const Color(0xFF01579B),
-                      onPressed: _scrollToBottom,
-                    ),
-                  ),
-              ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: widget.dark
+          ? const SystemUiOverlayStyle(
+              statusBarColor: Color(0x00000000),
+              statusBarBrightness: Brightness.dark,
+              statusBarIconBrightness: Brightness.light,
+              systemNavigationBarColor: Color(0xFF000000),
+              systemNavigationBarIconBrightness: Brightness.light,
+            )
+          : const SystemUiOverlayStyle(
+              statusBarColor: Color(0x00000000),
+              statusBarBrightness: Brightness.light,
+              statusBarIconBrightness: Brightness.dark,
+              systemNavigationBarColor: Color(0xFFFFFFFF),
+              systemNavigationBarIconBrightness: Brightness.dark,
+            ),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          inherit: false,
+          color: widget.dark
+              ? const Color(0xFFFFFFFF)
+              : const Color(0xFF000000),
+          fontSize: 14,
+          decoration: TextDecoration.none,
+        ),
+        child: ColoredBox(
+          color: widget.dark
+              ? const Color(0xFF000000)
+              : const Color(0xFFF5F5F5),
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact =
+                      constraints.maxWidth < 360 ||
+                      MediaQuery.textScalerOf(context).scale(16) > 20;
+                  return Stack(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          _buildTopBar(context, compact: compact),
+                          const SizedBox(height: 8),
+                          Expanded(child: _buildLogContent()),
+                          const SizedBox(height: 8),
+                          _buildBottomBar(compact: compact),
+                        ],
+                      ),
+                      if (_showLevelMenu) ...[
+                        Positioned.fill(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => setState(() => _showLevelMenu = false),
+                          ),
+                        ),
+                        Positioned(
+                          right: 12,
+                          bottom: compact ? 164 : 116,
+                          child: _buildLevelMenu(),
+                        ),
+                      ],
+                      if (!_followBottom && !_showLevelMenu)
+                        Positioned(
+                          right: 16,
+                          bottom: compact ? 172 : 124,
+                          child: _ConsoleButton(
+                            label: '↓ Latest',
+                            semanticsLabel: 'Jump to latest log',
+                            color: widget.dark
+                                ? const Color(0xFFFFFFFF)
+                                : const Color(0xFF01579B),
+                            onPressed: _scrollToBottom,
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -230,161 +262,280 @@ class _LogConsoleState extends State<LogConsole> {
   Widget _buildLogContent() {
     return ColoredBox(
       color: widget.dark ? const Color(0xFF000000) : const Color(0xFFF5F5F5),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: 1600,
-          child: ListView.builder(
-            shrinkWrap: true,
-            controller: _scrollController,
-            itemBuilder: (context, index) {
-              var logEntry = _filteredBuffer[index];
-              return Text.rich(
-                logEntry.span,
-                key: Key(logEntry.id.toString()),
+      child: _filteredBuffer.isEmpty
+          ? Center(
+              child: Text(
+                _outputEventBuffer.isEmpty
+                    ? 'No logs yet'
+                    : 'No logs match these filters',
                 style: TextStyle(
-                  fontSize: _logFontSize,
-                  color: logEntry.level.toColor(widget.dark),
+                  color: widget.dark
+                      ? const Color(0xFFB0BEC5)
+                      : const Color(0xFF546E7A),
                 ),
-              );
-            },
-            itemCount: _filteredBuffer.length,
+              ),
+            )
+          : ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              itemBuilder: (context, index) {
+                final entry = _filteredBuffer[index];
+                final levelColor = entry.level.toColor(widget.dark);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        child: Text(
+                          _shortLevelLabel(entry.level),
+                          style: TextStyle(
+                            color: levelColor,
+                            fontSize: _logFontSize,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text.rich(
+                          entry.span,
+                          key: Key(entry.id.toString()),
+                          softWrap: true,
+                          style: TextStyle(
+                            fontSize: _logFontSize,
+                            height: 1.35,
+                            fontFamily: 'monospace',
+                            color: levelColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              itemCount: _filteredBuffer.length,
+            ),
+    );
+  }
+
+  String _shortLevelLabel(Level level) {
+    if (level == Level.INFO) return 'I';
+    if (level == Level.WARNING) return 'W';
+    if (level == Level.SEVERE) return 'E';
+    if (level == Level.SHOUT) return '!';
+    return 'D';
+  }
+
+  Widget _buildTopBar(BuildContext context, {required bool compact}) {
+    final count = _filteredBuffer.length == _renderedBuffer.length
+        ? '${_filteredBuffer.length}'
+        : '${_filteredBuffer.length}/${_renderedBuffer.length}';
+    final title = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'Logs',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          count,
+          style: TextStyle(
+            fontSize: 13,
+            color: widget.dark
+                ? const Color(0xFFB0BEC5)
+                : const Color(0xFF546E7A),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          _followBottom ? 'LIVE' : 'PAUSED',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: _followBottom
+                ? (widget.dark
+                      ? const Color(0xFF81C784)
+                      : const Color(0xFF1B5E20))
+                : (widget.dark
+                      ? const Color(0xFFFFB74D)
+                      : const Color(0xFF8D5200)),
+          ),
+        ),
+      ],
+    );
+    final actions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ConsoleButton(
+          label: 'Copy',
+          semanticsLabel: 'Copy filtered logs',
+          color: widget.dark
+              ? const Color(0xFF69F0AE)
+              : const Color(0xFF006B3C),
+          onPressed: () {
+            Clipboard.setData(
+              ClipboardData(
+                text: _filteredBuffer
+                    .map((entry) => entry.originalText)
+                    .join('\n'),
+              ),
+            );
+          },
+        ),
+        if (widget.showCloseButton)
+          _ConsoleButton(
+            label: 'Close',
+            semanticsLabel: 'Close log console',
+            color: widget.dark
+                ? const Color(0xFFECEFF1)
+                : const Color(0xFF263238),
+            onPressed: () => Navigator.pop(context),
+          ),
+      ],
+    );
+    return LogBar(
+      dark: widget.dark,
+      height: compact ? 96 : 60,
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                title,
+                Align(alignment: Alignment.centerRight, child: actions),
+              ],
+            )
+          : Row(children: [title, const Spacer(), actions]),
+    );
+  }
+
+  Widget _buildBottomBar({required bool compact}) {
+    final foreground = widget.dark
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF000000);
+    final levelControl = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('Level'),
+        const SizedBox(width: 8),
+        _ConsoleButton(
+          label: _levelLabel(_filterLevel),
+          semanticsLabel: 'Filter log level',
+          color: foreground,
+          onPressed: () => setState(() => _showLevelMenu = true),
+        ),
+      ],
+    );
+    final fontControls = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ConsoleButton(
+          label: 'A−',
+          semanticsLabel: 'Decrease log font size',
+          color: foreground,
+          onPressed: () {
+            if (_logFontSize > 11) setState(() => _logFontSize--);
+          },
+        ),
+        _ConsoleButton(
+          label: 'A+',
+          semanticsLabel: 'Increase log font size',
+          color: foreground,
+          onPressed: () {
+            if (_logFontSize < 24) setState(() => _logFontSize++);
+          },
+        ),
+      ],
+    );
+    return SizedBox(
+      height: compact ? 156 : 108,
+      child: ColoredBox(
+        color: widget.dark ? const Color(0xFF263238) : const Color(0xFFFFFFFF),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: Column(
+            children: [
+              SizedBox(height: 44, child: _buildSearchField()),
+              const SizedBox(height: 4),
+              if (compact) ...[
+                Align(alignment: Alignment.centerLeft, child: levelControl),
+                const SizedBox(height: 4),
+                Align(alignment: Alignment.centerRight, child: fontControls),
+              ] else
+                Row(children: [levelControl, const Spacer(), fontControls]),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
-    return LogBar(
-      dark: widget.dark,
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        children: <Widget>[
-          Text(
-            "Log Console",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          Spacer(),
-          _ConsoleButton(
-            label: 'Copy',
-            semanticsLabel: 'Copy filtered logs',
-            color: const Color(0xFF69F0AE),
-            onPressed: () {
-              Clipboard.setData(
-                ClipboardData(
-                  text: _filteredBuffer
-                      .map((entry) => entry.originalText)
-                      .join('\n'),
-                ),
-              );
-            },
-          ),
-          _ConsoleButton(
-            label: '+',
-            semanticsLabel: 'Increase log font size',
-            color: widget.dark
-                ? const Color(0xFFFFFFFF)
-                : const Color(0xFF000000),
-            onPressed: () {
-              setState(() {
-                _logFontSize++;
-              });
-            },
-          ),
-          _ConsoleButton(
-            label: '−',
-            semanticsLabel: 'Decrease log font size',
-            color: widget.dark
-                ? const Color(0xFFFFFFFF)
-                : const Color(0xFF000000),
-            onPressed: () {
-              setState(() {
-                _logFontSize--;
-              });
-            },
-          ),
-          if (widget.showCloseButton)
-            _ConsoleButton(
-              label: '×',
-              semanticsLabel: 'Close log console',
-              color: const Color(0xFFEF9A9A),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-        ],
+  Widget _buildSearchField() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: widget.dark
+              ? const Color(0xFF78909C)
+              : const Color(0xFF90A4AE),
+        ),
+        borderRadius: BorderRadius.circular(6),
       ),
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return LogBar(
-      dark: widget.dark,
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        children: <Widget>[
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: widget.dark
-                      ? const Color(0xFF9E9E9E)
-                      : const Color(0xFF616161),
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: SizedBox(
-                height: 44,
-                child: Stack(
-                  fit: StackFit.expand,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_filterController.text.isEmpty)
+            const IgnorePointer(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Align(
                   alignment: Alignment.centerLeft,
-                  children: [
-                    if (_filterController.text.isEmpty)
-                      const IgnorePointer(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text('Filter log output'),
-                          ),
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: EditableText(
-                          controller: _filterController,
-                          focusNode: _filterFocusNode,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: widget.dark
-                                ? const Color(0xFFFFFFFF)
-                                : const Color(0xFF000000),
-                          ),
-                          cursorColor: widget.dark
-                              ? const Color(0xFFFFFFFF)
-                              : const Color(0xFF000000),
-                          backgroundCursorColor: const Color(0xFF9E9E9E),
-                          onChanged: (_) => _refreshFilter(),
-                        ),
-                      ),
-                    ),
-                  ],
+                  child: Text('Search logs'),
                 ),
               ),
             ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 12,
+              right: _filterController.text.isEmpty ? 12 : 48,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: EditableText(
+                controller: _filterController,
+                focusNode: _filterFocusNode,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: widget.dark
+                      ? const Color(0xFFFFFFFF)
+                      : const Color(0xFF000000),
+                ),
+                cursorColor: widget.dark
+                    ? const Color(0xFFFFFFFF)
+                    : const Color(0xFF000000),
+                backgroundCursorColor: const Color(0xFF9E9E9E),
+                textInputAction: TextInputAction.search,
+                onChanged: (_) => _refreshFilter(),
+              ),
+            ),
           ),
-          const SizedBox(width: 12),
-          _ConsoleButton(
-            label: _levelLabel(_filterLevel),
-            semanticsLabel: 'Filter log level',
-            color: widget.dark
-                ? const Color(0xFFFFFFFF)
-                : const Color(0xFF000000),
-            onPressed: () => setState(() => _showLevelMenu = true),
-          ),
+          if (_filterController.text.isNotEmpty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: _ConsoleButton(
+                label: '×',
+                semanticsLabel: 'Clear search',
+                color: widget.dark
+                    ? const Color(0xFFB0BEC5)
+                    : const Color(0xFF546E7A),
+                onPressed: () {
+                  _filterController.clear();
+                  _refreshFilter();
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -473,14 +624,15 @@ class _LogConsoleState extends State<LogConsole> {
 class LogBar extends StatelessWidget {
   final bool? dark;
   final Widget? child;
+  final double height;
 
-  LogBar({this.dark, this.child});
+  LogBar({this.dark, this.child, this.height = 60});
 
   @override
   Widget build(BuildContext context) {
     final isDark = dark ?? false;
     return SizedBox(
-      height: 60,
+      height: height,
       child: DecoratedBox(
         decoration: BoxDecoration(
           boxShadow: [
@@ -575,15 +727,15 @@ class _ConsoleButtonState extends State<_ConsoleButton> {
 extension LevelExtension on Level {
   Color toColor(bool dark) {
     if (this == Level.CONFIG) {
-      return dark ? const Color(0x61FFFFFF) : const Color(0x61000000);
+      return dark ? const Color(0xFF9E9E9E) : const Color(0xFF616161);
     } else if (this == Level.INFO) {
       return dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
     } else if (this == Level.WARNING) {
-      return const Color(0xFFFF9800);
+      return dark ? const Color(0xFFFFB74D) : const Color(0xFFA65300);
     } else if (this == Level.SEVERE) {
-      return const Color(0xFFF44336);
+      return dark ? const Color(0xFFEF5350) : const Color(0xFFB71C1C);
     } else if (this == Level.SHOUT) {
-      return const Color(0xFFFF4081);
+      return dark ? const Color(0xFFF48FB1) : const Color(0xFFAD1457);
     } else {
       return dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
     }

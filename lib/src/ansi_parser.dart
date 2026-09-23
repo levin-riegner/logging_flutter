@@ -109,13 +109,13 @@ class AnsiParser {
       case 0:
         return foreground ? const Color(0xFF000000) : const Color(0x00000000);
       case 12:
-        return dark ? const Color(0xFF4FC3F7) : const Color(0xFF303F9F);
+        return dark ? const Color(0xFF81D4FA) : const Color(0xFF0D47A1);
       case 208:
-        return dark ? const Color(0xFFFFB74D) : const Color(0xFFF57C00);
+        return dark ? const Color(0xFFFFB74D) : const Color(0xFFA65300);
       case 196:
-        return dark ? const Color(0xFFE57373) : const Color(0xFFD32F2F);
+        return dark ? const Color(0xFFEF5350) : const Color(0xFFB71C1C);
       case 199:
-        return dark ? const Color(0xFFF06292) : const Color(0xFFC2185B);
+        return dark ? const Color(0xFFF48FB1) : const Color(0xFFAD1457);
     }
     return foreground ? const Color(0xFF000000) : const Color(0x00000000);
   }

@@ -129,12 +129,47 @@ void main() {
 
     await tester.tap(find.text('Open console'));
     await tester.pumpAndSettle();
-    expect(find.text('Log Console'), findsOneWidget);
+    expect(find.text('Logs'), findsOneWidget);
     expect(find.byType(WidgetsApp), findsOneWidget);
 
-    await tester.tap(find.text('×'));
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
-    expect(find.text('Log Console'), findsNothing);
+    expect(find.text('Logs'), findsNothing);
+  });
+
+  testWidgets('wraps long rows at phone width without truncating copy', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final message = 'LongMessage-' * 30;
+    resetWith(message);
+    await tester.pumpWidget(neutralApp(LogConsole()));
+
+    final row = find.textContaining('LongMessage-');
+    expect(row, findsOneWidget);
+    expect(tester.getSize(row).width, lessThan(320));
+    expect(tester.getSize(row).height, greaterThan(40));
+    expect(await copyLogs(tester), message);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('controls fit at phone width with larger text', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    resetWith('Readable entry');
+    await tester.pumpWidget(
+      neutralApp(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+          child: LogConsole(showCloseButton: true),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Search logs'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
   });
 
   test('rejects a non-positive buffer size', () {
