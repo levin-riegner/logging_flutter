@@ -6,6 +6,10 @@ Flutter extension for the [logging](https://pub.dev/packages/logging) package.
 
 This package provides a simple tool for logging messages in your applications and a set of additional utilities.
 
+`Flogger.d/i/w/e` send messages through Dart's `logging` package. `Flogger` listeners receive a `FloggerRecord`, which can be printed or forwarded to another service. The in-app `LogConsole` has its own buffer: register a listener that calls `LogConsole.add` to populate it.
+
+Version 4.0 requires Dart 3.12 and Flutter 3.47 or newer, and declares Android and iOS support. See the [migration guide](MIGRATION.md) when upgrading from 3.x.
+
 ## Features
 
 - Print logs to the console using a standard format.
@@ -29,12 +33,16 @@ Use the [Flogger](lib/src/flogger.dart) static class to access all logging metho
 1. Register a listener to print logs to the developer console.
 
     ```dart
-    if (kDebugMode){
-        Flogger.registerListener(
-            (record) => log(record.printable(), stackTrace: record.stackTrace),
-        );
+    if (kDebugMode) {
+      Flogger.registerListener(
+        (record) => log(record.printable(), stackTrace: record.stackTrace),
+      );
     }
     ```
+
+    `registerListener` returns a `FloggerListenerRegistration`. Keep it and call `await registration.cancel()` when a listener belongs to a shorter-lived component. `Flogger.clearListeners()` cancels only listeners registered through `Flogger`.
+
+    `Flogger.init` sets `Logger.root.level` to `Level.ALL` or `Level.INFO` according to `showDebugLogs`, so the setting also affects logs from other packages using `logging`.
 
 ### Logging messages
 
@@ -44,8 +52,10 @@ Log messages with their severity using the following methods:
 Flogger.d("Debug message");
 Flogger.i("Info message");
 Flogger.w("Warning message");
-Flogger.e("Error message", stackTrace: null);
+Flogger.e("Error message");
 ```
+
+`FloggerRecord.message` contains the unformatted message. `record.printable()` applies the configured prefix, timestamp, and custom printer.
 
 These calls will result in the logs below when using the default configuration:
 
@@ -60,26 +70,21 @@ These calls will result in the logs below when using the default configuration:
 
 #### Configuration
 
-Use the [FloggerConfig](lib/src/flogger.dart) class when initializing the Flogger to configure how logs are printed:
+Use [FloggerConfig](lib/src/flogger.dart) to choose the logger name, caller names, timestamps, debug filtering, or a custom printer:
 
 ```dart
-Flogger.init(config: FloggerConfig(...));
-FloggerConfig({
-    // The name of the default logger
-    this.loggerName = "App",
-    // Print the class name where the log was triggered
-    this.printClassName = true,
-    // Print the method name where the log was triggered
-    this.printMethodName = false,
-    // Print the date and time when the log occurred
-    this.showDateTime = false,
-    // Print logs with Debug severity
-    this.showDebugLogs = true,
-    // Print logs with a custom format
-    // If set, ignores all other print options
-    final FloggerPrinter? printer,
-});
+Flogger.init(
+  config: const FloggerConfig(
+    loggerName: 'App',
+    printClassName: true,
+    printMethodName: false,
+    showDateTime: false,
+    showDebugLogs: true,
+  ),
+);
 ```
+
+Set `printer` to a `FloggerPrinter` for a custom display string; it overrides the other print options.
 
 #### Viewing logs inside the app
 
@@ -99,8 +104,10 @@ Use the [LogConsole](lib/src/log_console.dart) class to view your logs inside th
 1. Open the logs console to view all recorded logs.
 
     ```dart
-    LogConsole.open(context)
+    LogConsole.open(context);
     ```
+
+The console updates while it is open. Search and severity filters apply to the displayed list and to Copy; copied text includes every matching row in its original case. `LogConsole.clear()` removes buffered logs. `bufferSize` must be positive and defaults to 1000.
 
 <p align="center">
   <img alt="Log console light" src="doc/static/log_console_light.png" width="45%">
@@ -144,11 +151,11 @@ Contributions are most welcome! Feel free to open a new issue or pull request to
 1. Set the new version on the [pubspec.yaml](pubspec.yaml) `version` field.
 2. Update the [CHANGELOG.md](CHANGELOG.md) file documenting the changes.
 3. Update the [README.md](README.md) file if necessary.
-4. Run `dart doc` to update the documentation.
-5. Run `dart pub publish --dry-run` to ensure the package can be published successfully.
-6. Create a new tag with the release version `git tag -a x.y.z -m "x.y.z" && git push --tags`.
-7. Navigate to [GitHub Releases](https://github.com/levin-riegner/logging_flutter/releases) and create a new release for the previously created tag, including the [CHANGELOG.md](CHANGELOG.md) changes.
-8. Finally run `dart pub publish` to deploy the project.
+4. Run `fvm flutter pub get`, `fvm dart format --output=none --set-exit-if-changed lib test`, `fvm flutter analyze`, and `fvm flutter test`.
+5. Analyze and build the example's Android and iOS debug apps, and check an app using a local path dependency.
+6. Run `fvm flutter pub publish --dry-run` and review the files and warnings.
+7. Publish with `fvm flutter pub publish` after the release PRs are merged.
+8. Tag the published commit and create a [GitHub release](https://github.com/levin-riegner/logging_flutter/releases) using the [CHANGELOG.md](CHANGELOG.md) entry.
 
 ## Credits
 
