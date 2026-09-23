@@ -4,6 +4,7 @@ import 'package:logging_flutter/logging_flutter.dart';
 
 void main() {
   group("Flogger", () {
+    setUp(Flogger.init);
     tearDown(() {
       Flogger.clearListeners();
     });
@@ -95,6 +96,73 @@ void main() {
         expect(record.printable(), "I/$loggerName: message");
       });
       Flogger.i("message");
+    });
+
+    test("maps convenience methods to levels and retains record fields", () {
+      final records = <FloggerRecord>[];
+      final trace = StackTrace.current;
+      Flogger.registerListener(records.add);
+
+      Flogger.d("debug");
+      Flogger.i("info", loggerName: "Network");
+      Flogger.w("warning");
+      Flogger.e("error", stackTrace: trace);
+
+      expect(records.map((record) => record.level), [
+        Level.CONFIG,
+        Level.INFO,
+        Level.WARNING,
+        Level.SEVERE,
+      ]);
+      expect(records.map((record) => record.message), [
+        "debug",
+        "info",
+        "warning",
+        "error",
+      ]);
+      expect(records[1].loggerName, "Network");
+      expect(records.last.stackTrace, same(trace));
+      expect(records.last.logRecord.stackTrace, same(trace));
+      expect(records.last.time, isNotNull);
+    });
+
+    test("formats levels and a custom logger without caller names", () {
+      Flogger.init(
+        config: const FloggerConfig(
+          printClassName: false,
+          printMethodName: false,
+        ),
+      );
+      final printed = <String>[];
+      Flogger.registerListener((record) => printed.add(record.printable()));
+
+      Flogger.d("debug");
+      Flogger.i("info", loggerName: "Network");
+      Flogger.w("warning");
+      Flogger.e("error");
+
+      expect(printed, [
+        "D/App: debug",
+        "I/Network: info",
+        "W/App: warning",
+        "E/App: error",
+      ]);
+    });
+
+    test("showDebugLogs false filters debug records", () {
+      Flogger.init(config: const FloggerConfig(showDebugLogs: false));
+      final records = <FloggerRecord>[];
+      Flogger.registerListener(records.add);
+
+      Flogger.d("debug");
+      Flogger.i("info");
+      Logger("External").config("external debug");
+      Logger("External").warning("external warning");
+
+      expect(records.map((record) => record.message), [
+        "info",
+        "external warning",
+      ]);
     });
   });
 }
