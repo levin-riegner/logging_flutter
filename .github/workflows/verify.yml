@@ -32,3 +32,12 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test
+      - name: Resolve example dependencies
+        working-directory: example
+        run: flutter pub get
+      - name: Analyze example
+        working-directory: example
+        run: flutter analyze
+      - name: Build example Android APK
+        working-directory: example
+        run: flutter build apk --debug --no-pub

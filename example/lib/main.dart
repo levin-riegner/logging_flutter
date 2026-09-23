@@ -10,10 +10,7 @@ class SampleClass {
   final String name;
   final int id;
 
-  SampleClass({
-    required this.name,
-    required this.id,
-  });
+  SampleClass({required this.name, required this.id});
 
   static void printSomeLogs() {
     Flogger.d("Debug message");
@@ -50,8 +47,9 @@ class ExternalPackage {
       Logger.root.info("Warning message with exception $e");
     }
 
-    Logger.root
-        .severe("Error message with exception - ${Exception("Test Error")}");
+    Logger.root.severe(
+      "Error message with exception - ${Exception("Test Error")}",
+    );
 
     Logger("Isar").info("Info message with a different logger name");
 
@@ -60,13 +58,16 @@ class ExternalPackage {
 }
 
 void main() {
-  runZonedGuarded(() {
-    runApp(MyApp());
-    init();
-  }, (error, stack) {
-    // Catch and log crashes
-    Flogger.e('Unhandled error - $error', stackTrace: stack);
-  });
+  runZonedGuarded(
+    () {
+      runApp(MyApp());
+      init();
+    },
+    (error, stack) {
+      // Catch and log crashes
+      Flogger.e('Unhandled error - $error', stackTrace: stack);
+    },
+  );
 }
 
 void init() {
@@ -112,9 +113,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      routes: <String, WidgetBuilder>{
-        "home": (context) => HomeWidget(),
-      },
+      routes: <String, WidgetBuilder>{"home": (context) => HomeWidget()},
       initialRoute: "home",
       theme: ThemeData.dark(),
     );
@@ -129,11 +128,13 @@ class HomeWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           TextButton(
-              onPressed: () => SampleClass.printSomeLogs(),
-              child: Text("Print some Logs")),
+            onPressed: () => SampleClass.printSomeLogs(),
+            child: Text("Print some Logs"),
+          ),
           TextButton(
-              onPressed: () => ExternalPackage.printSomeLogs(),
-              child: Text("Print some non-flogger Logs")),
+            onPressed: () => ExternalPackage.printSomeLogs(),
+            child: Text("Print some non-flogger Logs"),
+          ),
           TextButton(
             onPressed: () async {
               await Future.delayed(Duration(milliseconds: 300));
@@ -144,8 +145,9 @@ class HomeWidget extends StatelessWidget {
           SizedBox(height: 16),
           Center(
             child: TextButton(
-                onPressed: () => LogConsole.open(context),
-                child: Text("or click here to open Logs Console")),
+              onPressed: () => LogConsole.open(context),
+              child: Text("or click here to open Logs Console"),
+            ),
           ),
         ],
       ),
