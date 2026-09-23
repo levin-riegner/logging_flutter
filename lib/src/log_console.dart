@@ -84,7 +84,8 @@ class _LogConsoleState extends State<LogConsole> {
 
     _scrollController.addListener(() {
       if (!_scrollListenerEnabled) return;
-      var scrolledToBottom = _scrollController.offset >=
+      var scrolledToBottom =
+          _scrollController.offset >=
           _scrollController.position.maxScrollExtent;
       setState(() {
         _followBottom = scrolledToBottom;
@@ -131,15 +132,15 @@ class _LogConsoleState extends State<LogConsole> {
       theme: widget.dark
           ? ThemeData(
               brightness: Brightness.dark,
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    secondary: Colors.blueGrey,
-                  ),
+              colorScheme: Theme.of(
+                context,
+              ).colorScheme.copyWith(secondary: Colors.blueGrey),
             )
           : ThemeData(
               brightness: Brightness.light,
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    secondary: Colors.lightBlueAccent,
-                  ),
+              colorScheme: Theme.of(
+                context,
+              ).colorScheme.copyWith(secondary: Colors.lightBlueAccent),
             ),
       home: Scaffold(
         body: SafeArea(
@@ -148,9 +149,7 @@ class _LogConsoleState extends State<LogConsole> {
             children: <Widget>[
               _buildTopBar(context),
               SizedBox(height: 8),
-              Expanded(
-                child: _buildLogContent(),
-              ),
+              Expanded(child: _buildLogContent()),
               SizedBox(height: 8),
               _buildBottomBar(),
             ],
@@ -194,8 +193,9 @@ class _LogConsoleState extends State<LogConsole> {
                 logEntry.span,
                 key: Key(logEntry.id.toString()),
                 style: TextStyle(
-                    fontSize: _logFontSize,
-                    color: logEntry.level.toColor(widget.dark)),
+                  fontSize: _logFontSize,
+                  color: logEntry.level.toColor(widget.dark),
+                ),
               );
             },
             itemCount: _filteredBuffer.length,
@@ -213,23 +213,13 @@ class _LogConsoleState extends State<LogConsole> {
         children: <Widget>[
           Text(
             "Log Console",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Spacer(),
           IconButton(
-            icon: Icon(
-              Icons.content_copy_rounded,
-              color: Colors.greenAccent,
-            ),
+            icon: Icon(Icons.content_copy_rounded, color: Colors.greenAccent),
             onPressed: () {
-              Clipboard.setData(
-                ClipboardData(
-                  text: logs.toString(),
-                ),
-              );
+              Clipboard.setData(ClipboardData(text: logs.toString()));
             },
           ),
           IconButton(
@@ -250,11 +240,7 @@ class _LogConsoleState extends State<LogConsole> {
           ),
           if (widget.showCloseButton)
             IconButton(
-              icon: Icon(
-                Icons.cancel,
-                color: Colors.red[200],
-                size: 30,
-              ),
+              icon: Icon(Icons.cancel, color: Colors.red[200], size: 30),
               onPressed: () {
                 Navigator.pop(context);
                 logs.clear();
@@ -286,28 +272,16 @@ class _LogConsoleState extends State<LogConsole> {
           DropdownButton(
             value: _filterLevel,
             items: [
-              DropdownMenuItem(
-                child: Text("DEBUG"),
-                value: Level.CONFIG,
-              ),
-              DropdownMenuItem(
-                child: Text("INFO"),
-                value: Level.INFO,
-              ),
-              DropdownMenuItem(
-                child: Text("WARNING"),
-                value: Level.WARNING,
-              ),
-              DropdownMenuItem(
-                child: Text("ERROR"),
-                value: Level.SEVERE,
-              ),
+              DropdownMenuItem(child: Text("DEBUG"), value: Level.CONFIG),
+              DropdownMenuItem(child: Text("INFO"), value: Level.INFO),
+              DropdownMenuItem(child: Text("WARNING"), value: Level.WARNING),
+              DropdownMenuItem(child: Text("ERROR"), value: Level.SEVERE),
             ],
             onChanged: (dynamic value) {
               _filterLevel = value;
               _refreshFilter();
             },
-          )
+          ),
         ],
       ),
     );
@@ -356,11 +330,7 @@ class LogBar extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           boxShadow: [
-            if (!dark!)
-              BoxShadow(
-                color: Colors.grey[400]!,
-                blurRadius: 3,
-              ),
+            if (!dark!) BoxShadow(color: Colors.grey[400]!, blurRadius: 3),
           ],
         ),
         child: Material(

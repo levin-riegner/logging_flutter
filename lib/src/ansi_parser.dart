@@ -118,15 +118,13 @@ class AnsiParser {
 
   TextSpan createSpan(String text) {
     return TextSpan(
-        text: text,
-        style: TextStyle(
-          color: foreground,
-          backgroundColor: background,
-        ),
-        recognizer: LongPressGestureRecognizer()
-          ..onLongPress = () {
-            // Clipboard.setData(ClipboardData(text: text));
-            // Toast.toast("Copy to paste board");
-          });
+      text: text,
+      style: TextStyle(color: foreground, backgroundColor: background),
+      recognizer: LongPressGestureRecognizer()
+        ..onLongPress = () {
+          // Clipboard.setData(ClipboardData(text: text));
+          // Toast.toast("Copy to paste board");
+        },
+    );
   }
 }
