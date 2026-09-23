@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Require Dart 3.12 and Flutter 3.47 or newer.
 - `Flogger.clearListeners()` now cancels only listeners registered through `Flogger`; it no longer clears unrelated listeners on `Logger.root`.
 - `LogConsole.add` rejects non-positive `bufferSize` values. An explicit `null` uses the default capacity of 1000.
+- `LogConsole.open` uses system brightness by default; pass `dark` when the app theme differs from the system setting.
 
 ### Added and fixed
 
@@ -17,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - `LogConsole` updates while open and exposes `clear()` to empty its buffer.
 - Copy includes every filtered log entry with its original letter case, including offscreen entries.
 - Truncated and malformed ANSI sequences no longer disappear or throw.
+- The in-app console uses Flutter core widgets without Material or Cupertino components.
 - Updated dependencies, CI checks, and the Android and iOS example projects.
 
 See [MIGRATION.md](MIGRATION.md) for upgrade guidance.

@@ -145,7 +145,7 @@ class HomeWidget extends StatelessWidget {
           SizedBox(height: 16),
           Center(
             child: TextButton(
-              onPressed: () => LogConsole.open(context),
+              onPressed: () => LogConsole.open(context, dark: true),
               child: Text("or click here to open Logs Console"),
             ),
           ),

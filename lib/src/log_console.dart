@@ -1,8 +1,5 @@
 import 'dart:collection';
-import 'dart:io';
-
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 
@@ -32,16 +29,16 @@ class LogConsole extends StatefulWidget {
   static Future<void> open(BuildContext context, {bool? dark}) async {
     var logConsole = LogConsole(
       showCloseButton: true,
-      dark: dark ?? Theme.of(context).brightness == Brightness.dark,
+      dark: dark ?? MediaQuery.platformBrightnessOf(context) == Brightness.dark,
     );
-    PageRoute route;
-    if (Platform.isIOS) {
-      route = CupertinoPageRoute(builder: (_) => logConsole);
-    } else {
-      route = MaterialPageRoute(builder: (_) => logConsole);
-    }
-
-    await Navigator.push(context, route);
+    await Navigator.push<void>(
+      context,
+      PageRouteBuilder<void>(
+        pageBuilder: (_, _, _) => logConsole,
+        transitionsBuilder: (_, animation, _, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
   }
 
   static void add(OutputEvent outputEvent, {int? bufferSize = 1000}) {
@@ -88,9 +85,11 @@ class _LogConsoleState extends State<LogConsole> {
 
   var _scrollController = ScrollController();
   var _filterController = TextEditingController();
+  var _filterFocusNode = FocusNode();
 
-  Level? _filterLevel = Level.CONFIG;
+  Level _filterLevel = Level.CONFIG;
   double _logFontSize = 14;
+  bool _showLevelMenu = false;
 
   var _currentId = 0;
   bool _scrollListenerEnabled = true;
@@ -135,7 +134,7 @@ class _LogConsoleState extends State<LogConsole> {
 
   List<RenderedEvent> _matchingEvents() {
     return _renderedBuffer.where((it) {
-      var logLevelMatches = it.level.value >= _filterLevel!.value;
+      var logLevelMatches = it.level.value >= _filterLevel.value;
       if (!logLevelMatches) {
         return false;
       } else if (_filterController.text.isNotEmpty) {
@@ -166,52 +165,61 @@ class _LogConsoleState extends State<LogConsole> {
     LogConsole._bufferVersion.removeListener(_onBufferChanged);
     _scrollController.dispose();
     _filterController.dispose();
+    _filterFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: widget.dark
-          ? ThemeData(
-              brightness: Brightness.dark,
-              colorScheme: Theme.of(
-                context,
-              ).colorScheme.copyWith(secondary: Colors.blueGrey),
-            )
-          : ThemeData(
-              brightness: Brightness.light,
-              colorScheme: Theme.of(
-                context,
-              ).colorScheme.copyWith(secondary: Colors.lightBlueAccent),
-            ),
-      home: Scaffold(
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              _buildTopBar(context),
-              SizedBox(height: 8),
-              Expanded(child: _buildLogContent()),
-              SizedBox(height: 8),
-              _buildBottomBar(),
-            ],
+    return DefaultTextStyle(
+      style: TextStyle(
+        inherit: false,
+        color: widget.dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+        fontSize: 14,
+        decoration: TextDecoration.none,
+      ),
+      child: ColoredBox(
+        color: widget.dark ? const Color(0xFF000000) : const Color(0xFFF5F5F5),
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
-        ),
-        floatingActionButton: AnimatedOpacity(
-          opacity: _followBottom ? 0 : 1,
-          duration: Duration(milliseconds: 150),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: 60),
-            child: FloatingActionButton(
-              mini: true,
-              clipBehavior: Clip.antiAlias,
-              child: Icon(
-                Icons.arrow_downward,
-                color: widget.dark ? Colors.white : Colors.lightBlue[900],
-              ),
-              onPressed: _scrollToBottom,
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _buildTopBar(context),
+                    const SizedBox(height: 8),
+                    Expanded(child: _buildLogContent()),
+                    const SizedBox(height: 8),
+                    _buildBottomBar(),
+                  ],
+                ),
+                if (_showLevelMenu) ...[
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(() => _showLevelMenu = false),
+                    ),
+                  ),
+                  Positioned(right: 12, bottom: 68, child: _buildLevelMenu()),
+                ],
+                if (!_followBottom && !_showLevelMenu)
+                  Positioned(
+                    right: 16,
+                    bottom: 76,
+                    child: _ConsoleButton(
+                      label: '↓',
+                      semanticsLabel: 'Jump to latest log',
+                      color: widget.dark
+                          ? const Color(0xFFFFFFFF)
+                          : const Color(0xFF01579B),
+                      onPressed: _scrollToBottom,
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -220,8 +228,8 @@ class _LogConsoleState extends State<LogConsole> {
   }
 
   Widget _buildLogContent() {
-    return Container(
-      color: widget.dark ? Colors.black : Colors.grey[150],
+    return ColoredBox(
+      color: widget.dark ? const Color(0xFF000000) : const Color(0xFFF5F5F5),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
@@ -258,8 +266,10 @@ class _LogConsoleState extends State<LogConsole> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Spacer(),
-          IconButton(
-            icon: Icon(Icons.content_copy_rounded, color: Colors.greenAccent),
+          _ConsoleButton(
+            label: 'Copy',
+            semanticsLabel: 'Copy filtered logs',
+            color: const Color(0xFF69F0AE),
             onPressed: () {
               Clipboard.setData(
                 ClipboardData(
@@ -270,16 +280,24 @@ class _LogConsoleState extends State<LogConsole> {
               );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.add),
+          _ConsoleButton(
+            label: '+',
+            semanticsLabel: 'Increase log font size',
+            color: widget.dark
+                ? const Color(0xFFFFFFFF)
+                : const Color(0xFF000000),
             onPressed: () {
               setState(() {
                 _logFontSize++;
               });
             },
           ),
-          IconButton(
-            icon: Icon(Icons.remove),
+          _ConsoleButton(
+            label: '−',
+            semanticsLabel: 'Decrease log font size',
+            color: widget.dark
+                ? const Color(0xFFFFFFFF)
+                : const Color(0xFF000000),
             onPressed: () {
               setState(() {
                 _logFontSize--;
@@ -287,8 +305,10 @@ class _LogConsoleState extends State<LogConsole> {
             },
           ),
           if (widget.showCloseButton)
-            IconButton(
-              icon: Icon(Icons.cancel, color: Colors.red[200], size: 30),
+            _ConsoleButton(
+              label: '×',
+              semanticsLabel: 'Close log console',
+              color: const Color(0xFFEF9A9A),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -305,33 +325,117 @@ class _LogConsoleState extends State<LogConsole> {
         mainAxisSize: MainAxisSize.max,
         children: <Widget>[
           Expanded(
-            child: TextField(
-              style: TextStyle(fontSize: 20),
-              controller: _filterController,
-              onChanged: (s) => _refreshFilter(),
-              decoration: InputDecoration(
-                labelText: "Filter log output",
-                border: OutlineInputBorder(),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: widget.dark
+                      ? const Color(0xFF9E9E9E)
+                      : const Color(0xFF616161),
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: SizedBox(
+                height: 44,
+                child: Stack(
+                  fit: StackFit.expand,
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    if (_filterController.text.isEmpty)
+                      const IgnorePointer(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text('Filter log output'),
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: EditableText(
+                          controller: _filterController,
+                          focusNode: _filterFocusNode,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: widget.dark
+                                ? const Color(0xFFFFFFFF)
+                                : const Color(0xFF000000),
+                          ),
+                          cursorColor: widget.dark
+                              ? const Color(0xFFFFFFFF)
+                              : const Color(0xFF000000),
+                          backgroundCursorColor: const Color(0xFF9E9E9E),
+                          onChanged: (_) => _refreshFilter(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          SizedBox(width: 20),
-          DropdownButton(
-            value: _filterLevel,
-            items: [
-              DropdownMenuItem(child: Text("DEBUG"), value: Level.CONFIG),
-              DropdownMenuItem(child: Text("INFO"), value: Level.INFO),
-              DropdownMenuItem(child: Text("WARNING"), value: Level.WARNING),
-              DropdownMenuItem(child: Text("ERROR"), value: Level.SEVERE),
-            ],
-            onChanged: (dynamic value) {
-              _filterLevel = value;
-              _refreshFilter();
-            },
+          const SizedBox(width: 12),
+          _ConsoleButton(
+            label: _levelLabel(_filterLevel),
+            semanticsLabel: 'Filter log level',
+            color: widget.dark
+                ? const Color(0xFFFFFFFF)
+                : const Color(0xFF000000),
+            onPressed: () => setState(() => _showLevelMenu = true),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildLevelMenu() {
+    return SizedBox(
+      width: 128,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: widget.dark
+              ? const Color(0xFF263238)
+              : const Color(0xFFFFFFFF),
+          border: Border.all(
+            color: widget.dark
+                ? const Color(0xFF607D8B)
+                : const Color(0xFFBDBDBD),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final level in [
+              Level.CONFIG,
+              Level.INFO,
+              Level.WARNING,
+              Level.SEVERE,
+            ])
+              _ConsoleButton(
+                label: _levelLabel(level),
+                color: widget.dark
+                    ? const Color(0xFFFFFFFF)
+                    : const Color(0xFF000000),
+                onPressed: () {
+                  _filterLevel = level;
+                  setState(() => _showLevelMenu = false);
+                  _refreshFilter();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _levelLabel(Level level) {
+    if (level == Level.INFO) return 'INFO';
+    if (level == Level.WARNING) return 'WARNING';
+    if (level == Level.SEVERE) return 'ERROR';
+    return 'DEBUG';
   }
 
   void _scrollToBottom() async {
@@ -374,19 +478,93 @@ class LogBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = dark ?? false;
     return SizedBox(
       height: 60,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           boxShadow: [
-            if (!dark!) BoxShadow(color: Colors.grey[400]!, blurRadius: 3),
+            if (!isDark)
+              const BoxShadow(color: Color(0xFFBDBDBD), blurRadius: 3),
           ],
         ),
-        child: Material(
-          color: dark! ? Colors.blueGrey[900] : Colors.white,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(15, 8, 15, 8),
-            child: child,
+        child: ColoredBox(
+          color: isDark ? const Color(0xFF263238) : const Color(0xFFFFFFFF),
+          child: DefaultTextStyle(
+            style: TextStyle(
+              color: isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+              fontSize: 16,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(15, 8, 15, 8),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConsoleButton extends StatefulWidget {
+  const _ConsoleButton({
+    required this.label,
+    required this.color,
+    required this.onPressed,
+    this.semanticsLabel,
+  });
+
+  final String label;
+  final String? semanticsLabel;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  State<_ConsoleButton> createState() => _ConsoleButtonState();
+}
+
+class _ConsoleButtonState extends State<_ConsoleButton> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: widget.semanticsLabel ?? widget.label,
+      child: FocusableActionDetector(
+        onShowFocusHighlight: (focused) => setState(() => _focused = focused),
+        shortcuts: const {
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onPressed();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onPressed,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: _focused ? widget.color.withValues(alpha: 0.2) : null,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Center(
+                  child: Text(
+                    widget.label,
+                    style: TextStyle(color: widget.color, fontSize: 18),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -397,17 +575,17 @@ class LogBar extends StatelessWidget {
 extension LevelExtension on Level {
   Color toColor(bool dark) {
     if (this == Level.CONFIG) {
-      return dark ? Colors.white38 : Colors.black38;
+      return dark ? const Color(0x61FFFFFF) : const Color(0x61000000);
     } else if (this == Level.INFO) {
-      return dark ? Colors.white : Colors.black;
+      return dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
     } else if (this == Level.WARNING) {
-      return Colors.orange;
+      return const Color(0xFFFF9800);
     } else if (this == Level.SEVERE) {
-      return Colors.red;
+      return const Color(0xFFF44336);
     } else if (this == Level.SHOUT) {
-      return Colors.pinkAccent;
+      return const Color(0xFFFF4081);
     } else {
-      return dark ? Colors.white : Colors.black;
+      return dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
     }
   }
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class AnsiParser {
   static const TEXT = 0, BRACKET = 1, CODE = 2;
@@ -107,17 +107,17 @@ class AnsiParser {
   Color? getColor(int colorCode, bool foreground) {
     switch (colorCode) {
       case 0:
-        return foreground ? Colors.black : Colors.transparent;
+        return foreground ? const Color(0xFF000000) : const Color(0x00000000);
       case 12:
-        return dark ? Colors.lightBlue[300] : Colors.indigo[700];
+        return dark ? const Color(0xFF4FC3F7) : const Color(0xFF303F9F);
       case 208:
-        return dark ? Colors.orange[300] : Colors.orange[700];
+        return dark ? const Color(0xFFFFB74D) : const Color(0xFFF57C00);
       case 196:
-        return dark ? Colors.red[300] : Colors.red[700];
+        return dark ? const Color(0xFFE57373) : const Color(0xFFD32F2F);
       case 199:
-        return dark ? Colors.pink[300] : Colors.pink[700];
+        return dark ? const Color(0xFFF06292) : const Color(0xFFC2185B);
     }
-    return foreground ? Colors.black : Colors.transparent;
+    return foreground ? const Color(0xFF000000) : const Color(0x00000000);
   }
 
   TextSpan createSpan(String text) {

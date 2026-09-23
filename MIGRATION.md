@@ -27,3 +27,5 @@ Existing call sites may ignore the return value. `Flogger.clearListeners()` now 
 ## In-app console
 
 `LogConsole.add` still accepts an `OutputEvent` and an optional `bufferSize`. The capacity must be positive; `null` uses 1000. The open console now shows newly added events. Copy uses the current text and level filters, includes offscreen entries, and preserves each entry's original case. Call `LogConsole.clear()` to remove buffered entries, including from an open console.
+
+The console UI now uses only Flutter core widgets. `LogConsole.open` chooses light or dark mode from the system setting when `dark` is omitted. Apps with a theme that differs from the system should pass `dark` explicitly.

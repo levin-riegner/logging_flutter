@@ -1,7 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging_flutter/logging_flutter.dart';
+
+Widget neutralApp(Widget home) => WidgetsApp(
+  color: const Color(0xFF263238),
+  pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
+    settings: settings,
+    pageBuilder: (context, _, _) => builder(context),
+  ),
+  home: home,
+);
 
 void main() {
   void resetWith(String text) {
@@ -22,14 +31,14 @@ void main() {
       () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
     );
 
-    await tester.tap(find.byIcon(Icons.content_copy_rounded));
+    await tester.tap(find.text('Copy'));
     await tester.pump();
     return copied;
   }
 
   testWidgets('shows entries added while the console is open', (tester) async {
     resetWith('Initial');
-    await tester.pumpWidget(MaterialApp(home: LogConsole()));
+    await tester.pumpWidget(neutralApp(LogConsole()));
     expect(find.textContaining('Initial'), findsOneWidget);
 
     LogConsole.add(OutputEvent(Level.WARNING, ['FreshEntry']));
@@ -46,7 +55,7 @@ void main() {
         bufferSize: 100,
       );
     }
-    await tester.pumpWidget(MaterialApp(home: LogConsole()));
+    await tester.pumpWidget(neutralApp(LogConsole()));
 
     final copied = await copyLogs(tester);
 
@@ -59,9 +68,9 @@ void main() {
     resetWith('InfoAlpha');
     LogConsole.add(OutputEvent(Level.WARNING, ['WarningBeta']));
     LogConsole.add(OutputEvent(Level.INFO, ['InfoGamma']));
-    await tester.pumpWidget(MaterialApp(home: LogConsole()));
+    await tester.pumpWidget(neutralApp(LogConsole()));
 
-    await tester.enterText(find.byType(TextField), 'BETA');
+    await tester.enterText(find.byType(EditableText), 'BETA');
     await tester.pump();
 
     expect(find.textContaining('WarningBeta'), findsOneWidget);
@@ -72,12 +81,12 @@ void main() {
   testWidgets('level filter and clear update the open console', (tester) async {
     resetWith('InfoOnly');
     LogConsole.add(OutputEvent(Level.WARNING, ['WarningOnly']));
-    await tester.pumpWidget(MaterialApp(home: LogConsole()));
+    await tester.pumpWidget(neutralApp(LogConsole()));
 
-    await tester.tap(find.byType(DropdownButton<Level>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('WARNING').last);
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('DEBUG'));
+    await tester.pump();
+    await tester.tap(find.text('WARNING'));
+    await tester.pump();
 
     expect(find.textContaining('InfoOnly'), findsNothing);
     expect(find.textContaining('WarningOnly'), findsOneWidget);
@@ -98,10 +107,34 @@ void main() {
   ) async {
     resetWith('Discarded');
     LogConsole.add(OutputEvent(Level.INFO, ['Retained']), bufferSize: 1);
-    await tester.pumpWidget(MaterialApp(home: LogConsole()));
+    await tester.pumpWidget(neutralApp(LogConsole()));
 
     expect(find.textContaining('Discarded'), findsNothing);
     expect(await copyLogs(tester), 'Retained');
+  });
+
+  testWidgets('opens and closes without Material or Cupertino widgets', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      neutralApp(
+        Builder(
+          builder: (context) => GestureDetector(
+            onTap: () => LogConsole.open(context, dark: true),
+            child: const Text('Open console'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open console'));
+    await tester.pumpAndSettle();
+    expect(find.text('Log Console'), findsOneWidget);
+    expect(find.byType(WidgetsApp), findsOneWidget);
+
+    await tester.tap(find.text('×'));
+    await tester.pumpAndSettle();
+    expect(find.text('Log Console'), findsNothing);
   });
 
   test('rejects a non-positive buffer size', () {
