@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class AnsiParser {
@@ -73,6 +72,7 @@ class AnsiParser {
       }
     }
 
+    if (state != TEXT && buffer != null) text.write(buffer);
     spans!.add(createSpan(text.toString()));
   }
 
@@ -87,13 +87,17 @@ class AnsiParser {
         background = getColor(0, false);
         break;
       case 38:
-        foreground = getColor(codes[2], true);
+        if (codes.length >= 3 && codes[1] == 5) {
+          foreground = getColor(codes[2], true);
+        }
         break;
       case 39:
         foreground = getColor(0, true);
         break;
       case 48:
-        background = getColor(codes[2], false);
+        if (codes.length >= 3 && codes[1] == 5) {
+          background = getColor(codes[2], false);
+        }
         break;
       case 49:
         background = getColor(0, false);
@@ -120,11 +124,6 @@ class AnsiParser {
     return TextSpan(
       text: text,
       style: TextStyle(color: foreground, backgroundColor: background),
-      recognizer: LongPressGestureRecognizer()
-        ..onLongPress = () {
-          // Clipboard.setData(ClipboardData(text: text));
-          // Toast.toast("Copy to paste board");
-        },
     );
   }
 }

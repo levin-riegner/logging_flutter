@@ -8,7 +8,7 @@ import 'package:logging/logging.dart';
 
 import 'ansi_parser.dart';
 
-ListQueue<OutputEvent> _outputEventBuffer = ListQueue();
+final ListQueue<OutputEvent> _outputEventBuffer = ListQueue();
 
 class FullLogs {
   StringBuffer fullLogs = StringBuffer('Start: ');
@@ -22,6 +22,8 @@ class OutputEvent {
 }
 
 class LogConsole extends StatefulWidget {
+  static final ValueNotifier<int> _bufferVersion = ValueNotifier<int>(0);
+
   final bool dark;
   final bool showCloseButton;
 
@@ -43,10 +45,21 @@ class LogConsole extends StatefulWidget {
   }
 
   static void add(OutputEvent outputEvent, {int? bufferSize = 1000}) {
-    while (_outputEventBuffer.length >= (bufferSize ?? 1)) {
+    final capacity = bufferSize ?? 1000;
+    if (capacity <= 0) {
+      throw ArgumentError.value(bufferSize, 'bufferSize', 'must be positive');
+    }
+    while (_outputEventBuffer.length >= capacity) {
       _outputEventBuffer.removeFirst();
     }
     _outputEventBuffer.add(outputEvent);
+    _bufferVersion.value++;
+  }
+
+  /// Remove buffered entries from any open console.
+  static void clear() {
+    _outputEventBuffer.clear();
+    _bufferVersion.value++;
   }
 
   @override
@@ -58,15 +71,20 @@ class RenderedEvent {
   final Level level;
   final TextSpan span;
   final String lowerCaseText;
+  final String originalText;
 
-  RenderedEvent(this.id, this.level, this.span, this.lowerCaseText);
+  RenderedEvent(
+    this.id,
+    this.level,
+    this.span,
+    this.lowerCaseText, {
+    String? originalText,
+  }) : originalText = originalText ?? lowerCaseText;
 }
 
 class _LogConsoleState extends State<LogConsole> {
   ListQueue<RenderedEvent> _renderedBuffer = ListQueue();
   List<RenderedEvent> _filteredBuffer = [];
-
-  var logs = FullLogs().fullLogs;
 
   var _scrollController = ScrollController();
   var _filterController = TextEditingController();
@@ -81,9 +99,11 @@ class _LogConsoleState extends State<LogConsole> {
   @override
   void initState() {
     super.initState();
+    LogConsole._bufferVersion.addListener(_onBufferChanged);
+    _reloadFromBuffer();
 
     _scrollController.addListener(() {
-      if (!_scrollListenerEnabled) return;
+      if (!_scrollListenerEnabled || !_scrollController.hasClients) return;
       var scrolledToBottom =
           _scrollController.offset >=
           _scrollController.position.maxScrollExtent;
@@ -94,18 +114,27 @@ class _LogConsoleState extends State<LogConsole> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void didUpdateWidget(LogConsole oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.dark != widget.dark) _reloadFromBuffer();
+  }
 
+  void _reloadFromBuffer() {
     _renderedBuffer.clear();
     for (var event in _outputEventBuffer) {
       _renderedBuffer.add(_renderEvent(event));
     }
-    _refreshFilter();
+    _filteredBuffer = _matchingEvents();
   }
 
-  void _refreshFilter() {
-    var newFilteredBuffer = _renderedBuffer.where((it) {
+  void _onBufferChanged() {
+    if (!mounted) return;
+    setState(_reloadFromBuffer);
+    _scheduleScrollToBottom();
+  }
+
+  List<RenderedEvent> _matchingEvents() {
+    return _renderedBuffer.where((it) {
       var logLevelMatches = it.level.value >= _filterLevel!.value;
       if (!logLevelMatches) {
         return false;
@@ -116,13 +145,28 @@ class _LogConsoleState extends State<LogConsole> {
         return true;
       }
     }).toList();
-    setState(() {
-      _filteredBuffer = newFilteredBuffer;
-    });
+  }
 
-    if (_followBottom) {
-      Future.delayed(Duration.zero, _scrollToBottom);
-    }
+  void _refreshFilter() {
+    setState(() {
+      _filteredBuffer = _matchingEvents();
+    });
+    _scheduleScrollToBottom();
+  }
+
+  void _scheduleScrollToBottom() {
+    if (!_followBottom) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _followBottom) _scrollToBottom();
+    });
+  }
+
+  @override
+  void dispose() {
+    LogConsole._bufferVersion.removeListener(_onBufferChanged);
+    _scrollController.dispose();
+    _filterController.dispose();
+    super.dispose();
   }
 
   @override
@@ -176,7 +220,6 @@ class _LogConsoleState extends State<LogConsole> {
   }
 
   Widget _buildLogContent() {
-    logs.clear();
     return Container(
       color: widget.dark ? Colors.black : Colors.grey[150],
       child: SingleChildScrollView(
@@ -188,7 +231,6 @@ class _LogConsoleState extends State<LogConsole> {
             controller: _scrollController,
             itemBuilder: (context, index) {
               var logEntry = _filteredBuffer[index];
-              logs.write(logEntry.lowerCaseText + "\n");
               return Text.rich(
                 logEntry.span,
                 key: Key(logEntry.id.toString()),
@@ -219,7 +261,13 @@ class _LogConsoleState extends State<LogConsole> {
           IconButton(
             icon: Icon(Icons.content_copy_rounded, color: Colors.greenAccent),
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: logs.toString()));
+              Clipboard.setData(
+                ClipboardData(
+                  text: _filteredBuffer
+                      .map((entry) => entry.originalText)
+                      .join('\n'),
+                ),
+              );
             },
           ),
           IconButton(
@@ -243,7 +291,6 @@ class _LogConsoleState extends State<LogConsole> {
               icon: Icon(Icons.cancel, color: Colors.red[200], size: 30),
               onPressed: () {
                 Navigator.pop(context);
-                logs.clear();
               },
             ),
         ],
@@ -288,6 +335,7 @@ class _LogConsoleState extends State<LogConsole> {
   }
 
   void _scrollToBottom() async {
+    if (!_scrollController.hasClients) return;
     _scrollListenerEnabled = false;
 
     setState(() {
@@ -301,7 +349,7 @@ class _LogConsoleState extends State<LogConsole> {
       curve: Curves.easeOut,
     );
 
-    _scrollListenerEnabled = true;
+    if (mounted) _scrollListenerEnabled = true;
   }
 
   RenderedEvent _renderEvent(OutputEvent event) {
@@ -313,6 +361,7 @@ class _LogConsoleState extends State<LogConsole> {
       event.level,
       TextSpan(children: parser.spans),
       text.toLowerCase(),
+      originalText: text,
     );
   }
 }
