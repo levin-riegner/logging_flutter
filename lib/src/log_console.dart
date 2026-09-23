@@ -356,12 +356,14 @@ class _LogConsoleState extends State<LogConsole> {
     var parser = AnsiParser(widget.dark);
     var text = event.lines.join('\n');
     parser.parse(text);
+    final span = TextSpan(children: parser.spans);
+    final visibleText = span.toPlainText();
     return RenderedEvent(
       _currentId++,
       event.level,
-      TextSpan(children: parser.spans),
-      text.toLowerCase(),
-      originalText: text,
+      span,
+      visibleText.toLowerCase(),
+      originalText: visibleText,
     );
   }
 }

@@ -69,6 +69,21 @@ void main() {
     expect(await copyLogs(tester), 'WarningBeta');
   });
 
+  testWidgets('search and copy use the visible text of ANSI entries', (
+    tester,
+  ) async {
+    LogConsole.clear();
+    LogConsole.add(OutputEvent(Level.INFO, ['Hel\u001b[38;5;196mlo\u001b[0m']));
+    await tester.pumpWidget(MaterialApp(home: LogConsole()));
+
+    expect(find.textContaining('Hello'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'HELLO');
+    await tester.pump();
+
+    expect(find.textContaining('Hello'), findsOneWidget);
+    expect(await copyLogs(tester), 'Hello');
+  });
+
   testWidgets('level filter and clear update the open console', (tester) async {
     resetWith('InfoOnly');
     LogConsole.add(OutputEvent(Level.WARNING, ['WarningOnly']));
